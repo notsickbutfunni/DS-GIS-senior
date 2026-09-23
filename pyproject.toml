@@ -9,6 +9,7 @@ dependencies = [
     "folium",
     "geopandas",
     "h3>=4",
+    "lightgbm>=4.7.0",
     "numpy",
     "opensearch-py",
     "osmnx",
@@ -18,6 +19,7 @@ dependencies = [
     "psycopg[binary]",
     "pyproj",
     "s2sphere",
+    "scikit-learn>=1.9.1",
     "shapely>=2",
 ]
 
