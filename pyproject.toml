@@ -1,0 +1,33 @@
+[project]
+name = "geosearch"
+version = "0.1.0"
+description = "Geo Search Senior DS roadmap: shared code and module projects"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "duckdb",
+    "folium",
+    "geopandas",
+    "h3>=4",
+    "numpy",
+    "opensearch-py",
+    "osmnx",
+    "overturemaps",
+    "pandas",
+    "polars",
+    "psycopg[binary]",
+    "pyproj",
+    "s2sphere",
+    "shapely>=2",
+]
+
+[dependency-groups]
+dev = [
+    "jupyterlab",
+    "pytest",
+    "ruff",
+]
+
+[build-system]
+requires = ["uv_build"]
+build-backend = "uv_build"

@@ -1,0 +1,16 @@
+# Data and artifacts
+data/
+models/
+*.parquet
+mlruns/
+
+# Secrets
+.env
+
+# Python
+.venv/
+__pycache__/
+*.py[cod]
+.ipynb_checkpoints/
+.pytest_cache/
+.ruff_cache/
