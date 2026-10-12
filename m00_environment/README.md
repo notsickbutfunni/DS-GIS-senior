@@ -1,6 +1,6 @@
 # Module 0: Environment & Mental Model
 
-**Status:** 🟡 In progress
+**Status:** Done
 **Deliverable:** Docker stack + PostGIS/OpenSearch parity check
 **Plan:** [docs/roadmap.md](../docs/roadmap.md)
 
