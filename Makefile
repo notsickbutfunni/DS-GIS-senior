@@ -1,5 +1,5 @@
 # Bounding box for the Overture places extract (default: Manhattan)
-BBOX ?= -74.03,40.70,-73.93,40.80
+BBOX ?= 76.74,43.03,77.16,43.40
 
 .PHONY: setup up down data lab lint
 
