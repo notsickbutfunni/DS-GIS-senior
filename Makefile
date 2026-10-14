@@ -1,4 +1,4 @@
-# Bounding box for the Overture places extract (default: Manhattan)
+# Bounding box for the Overture places extract (city: Almaty)
 BBOX ?= 76.74,43.03,77.16,43.40
 
 .PHONY: setup up down data lab lint
