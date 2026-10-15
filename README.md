@@ -1,9 +1,13 @@
-# Geo Search Senior Data Scientist Roadmap
-### 6–12 month path from GIS/DS generalist → Senior DS, Geo Search
+# Geospatial Data Scientist Roadmap
+### 34-week path from GIS/DS generalist → Geospatial Data Scientist (GeoAI / computer vision)
 
-Goal: build evidence for the decisions this role requires: turning noisy ride sessions into unbiased ranking labels, keeping query understanding under a 50ms keystroke budget, and deciding per query whether to trust your own index or fall back to an external provider.
+Goal: go from raw pixels (satellite scenes, traffic-camera video) to maps, measurements and forecasts that a city or a mapping company would act on, and build evidence for the decisions this work requires: evaluating a model so the number survives a new city, turning a camera's pixels into metres on a map and proving the speeds are right, and keeping a pipeline healthy when a camera moves or the season changes.
 
-**Time budget:** 10–15 hrs/week. Modules 0–2 can compress if you know GIS. **Modules 5–8 are the core. Don't compress them.**
+Two flagship projects:
+- **Urban-growth layer from satellite imagery** (Module 4): building footprints, roads and change polygons on a time-slider map.
+- **Camera-to-map traffic system** (Modules 5–6, joined in the capstone): detect → track → georeference → speeds → segment state → forecast.
+
+**Time budget:** 10–12.5 hrs/week: Mon–Thu 2 h, Sat 4–5 h build, Fri buffer, Sun 30-min review. Modules 0–1 can compress if you know GIS, Module 3 if you know rasters. **Modules 4–8 are the core (both flagships). Don't compress them.**
 
 Full plan: [docs/roadmap.md](docs/roadmap.md) · Results: [numbers.md](numbers.md) · Interview stories: [stories.md](stories.md)
 
@@ -13,19 +17,19 @@ Full plan: [docs/roadmap.md](docs/roadmap.md) · Results: [numbers.md](numbers.m
 
 | # | Module | Weeks | Status | Deliverable |
 |---|---|---|---|---|
-| 0 | [Environment & Mental Model](m00_environment/) | 1 | Done | Docker stack + PostGIS/OpenSearch parity check |
-| 1 | [Spatial Indexing](m01_spatial_indexing/) | 2–4 | ⬜ Not started | Nearest-driver strategy benchmark |
-| 2 | [OpenSearch for Geo](m02_opensearch/) | 4–6 | ⬜ Not started | Cross-script autocomplete engine |
-| 3 | [Query Understanding](m03_query_understanding/) | 6–9 | ⬜ Not started | Query understanding microservice |
-| 4 | [LLM Distillation](m04_distillation/) | 9–11 | ⬜ Not started | Intent classifier at 10ms p99 |
-| 5 | [Unbiased Ranking Labels ⭐](m05_labels/) | 11–15 | ⬜ Not started | IPS-corrected label pipeline |
-| 6 | [Learning to Rank](m06_ltr/) | 15–19 | ⬜ Not started | Two-stage geo LTR service |
-| 7 | [Offline Replay & Error Analysis](m07_replay/) | 19–22 | ⬜ Not started | Replay harness + segmented report |
-| 8 | [Experimentation & Fallback](m08_experiments/) | 22–25 | ⬜ Not started | Switchback simulator + confidence model |
-| 9 | [Capstone](m09_capstone/) | 25–30+ | ⬜ Not started | Deployed demo + design doc |
-| 10 | [Interview Readiness](m10_interviews/) | 30–34 | ⬜ Not started | Recorded walkthrough + mock interviews |
+| 0 | [Environment & Mental Model](m00_environment/) | 1 | 🟡 In progress (3/5) | Docker stack + PostGIS/OpenSearch parity check |
+| 1 | [Spatial Indexing & Core Stack](m01_spatial_indexing/) | 2–4 | ⬜ Not started | Demand heatmap + nearest-driver benchmark |
+| 2 | [Spatial Statistics & Spatial ML](m02_opensearch/) | 4–6 | ⬜ Not started | Spatial-modelling report: random vs blocked CV |
+| 3 | [Raster Data & Remote Sensing](m03_query_understanding/) | 7–8 | ⬜ Not started | Sentinel-2 pipeline: composites → indices per H3 cell |
+| 4 | [Deep Learning for Satellite Imagery ⭐](m04_distillation/) | 9–12 | ⬜ Not started | Urban-growth layer: footprints + roads + change |
+| 5 | [Video CV: Detect, Track, Count ⭐](m05_labels/) | 13–15 | ⬜ Not started | Counting service by class, lane and direction |
+| 6 | [Pixels to Map: Camera Geometry & Speed ⭐](m06_ltr/) | 16–17 | ⬜ Not started | Georeferenced tracks + speeds validated on BrnoCompSpeed |
+| 7 | [Trajectories & Traffic Flow](m07_replay/) | 18–20 | ⬜ Not started | Trajectory toolkit + study-area dashboard |
+| 8 | [Spatio-Temporal Analytics & Forecasting](m08_experiments/) | 21–23 | ⬜ Not started | Traffic-state API with 30-min forecasts |
+| 9 | [Capstone: Camera-to-Map Traffic System](m09_capstone/) | 24–29 | ⬜ Not started | Deployed demo + design doc |
+| 10 | [Interview Readiness](m10_interviews/) | 30–34 | ⬜ Not started | Recorded derivations, capstone walkthrough, mocks |
 
-⬜ Not started · 🟡 In progress · ✅ Done
+⬜ Not started · 🟡 In progress · ✅ Done · ⭐ Flagship modules
 
 ---
 
@@ -40,6 +44,8 @@ src/geosearch/     shared code: distance, H3 helpers, metrics, simulator
 mXX_*/             one folder per module: README.md (report), notebooks/, scripts/
 data/, models/     gitignored; filled by `make data`
 ```
+
+Never commit API keys, datasets or raw video. Check each camera feed's terms of use before recording it.
 
 ## Quickstart
 
