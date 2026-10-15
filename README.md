@@ -17,7 +17,7 @@ Full plan: [docs/roadmap.md](docs/roadmap.md) · Results: [numbers.md](numbers.m
 
 | # | Module | Weeks | Status | Deliverable |
 |---|---|---|---|---|
-| 0 | [Environment & Mental Model](m00_environment/) | 1 | 🟡 In progress (3/5) | Docker stack + PostGIS/OpenSearch parity check |
+| 0 | [Environment & Mental Model](m00_environment/) | 1 | 🟡 In progress (4/5) | Docker stack + PostGIS/OpenSearch parity check |
 | 1 | [Spatial Indexing & Core Stack](m01_spatial_indexing/) | 2–4 | ⬜ Not started | Demand heatmap + nearest-driver benchmark |
 | 2 | [Spatial Statistics & Spatial ML](m02_spatial_stats/) | 4–6 | ⬜ Not started | Spatial-modelling report: random vs blocked CV |
 | 3 | [Raster Data & Remote Sensing](m03_remote_sensing/) | 7–8 | ⬜ Not started | Sentinel-2 pipeline: composites → indices per H3 cell |
