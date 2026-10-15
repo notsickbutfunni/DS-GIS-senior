@@ -4,6 +4,10 @@ services:
     env_file: .env
     ports: ["5432:5432"]
     volumes: [pgdata:/var/lib/postgresql/data]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 10s
+      retries: 5
 
   opensearch:
     image: opensearchproject/opensearch:2
@@ -11,9 +15,14 @@ services:
       - discovery.type=single-node
       - DISABLE_SECURITY_PLUGIN=true
       - DISABLE_INSTALL_DEMO_CONFIG=true
-      - OPENSEARCH_JAVA_OPTS=-Xms1g -Xmx1g
+      - OPENSEARCH_JAVA_OPTS=-Xms2g -Xmx2g
     ports: ["9200:9200"]
     volumes: [osdata:/usr/share/opensearch/data]
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fs localhost:9200/_cluster/health || exit 1"]
+      interval: 15s
+      retries: 10
+      start_period: 30s
 
   opensearch-dashboards:
     image: opensearchproject/opensearch-dashboards:2
@@ -21,18 +30,34 @@ services:
       - OPENSEARCH_HOSTS=["http://opensearch:9200"]
       - DISABLE_SECURITY_DASHBOARDS_PLUGIN=true
     ports: ["5601:5601"]
-    depends_on: [opensearch]
+    depends_on:
+      opensearch:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fs localhost:5601/api/status || exit 1"]
+      interval: 15s
+      retries: 10
+      start_period: 30s
 
   redis:
     image: redis:7
     ports: ["6379:6379"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      retries: 5
 
   minio:
-    image: minio/minio
+    # minio/minio is no longer published (MinIO went source-only in late 2025); Chainguard builds the same server
+    image: cgr.dev/chainguard/minio:latest
     command: server /data --console-address ":9001"
     env_file: .env
     ports: ["9000:9000", "9001:9001"]
     volumes: [miniodata:/data]
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 10s
+      retries: 5
 
 volumes:
   pgdata:
