@@ -1,357 +1,341 @@
 # Roadmap
 
-Module summaries first, full detail below.
+Module summaries first, full detail below. The day-by-day schedule, with every reading and checkbox, lives in the interactive plan; this file is the reference version that travels with the code.
+ 
+**Direction:** become a geospatial data scientist who can go from raw pixels (satellite scenes, traffic-camera video) to maps, measurements and forecasts that a city or a mapping company would act on. Two flagship projects: (1) an urban-growth layer from satellite imagery, (2) a camera-to-map traffic system (detect → track → georeference → speeds → segment state → forecast).
+ 
+**Timeline:** 34 weeks, 28 Sep 2026 → 22 May 2027, ~10–12.5 h/week (Mon–Thu 2 h, Sat 4–5 h build, Fri buffer, Sun 30-min review).
+ 
+**Hardware:** Colab/Kaggle for anything that needs >8 GB VRAM (foundation-model fine-tunes, DCRNN); a local RTX 4060 (8 GB) for everything else — 512 px tiles, batch 8, mixed precision.
 
 ## Modules
-
-**0. Environment & Mental Model:** Three worlds (index, query, ranking); CRS (4326 vs 3857 vs projected); Haversine vs road ETA.
-→ Docker Compose (PostGIS, OpenSearch, Redis, MinIO); load Overture places into both, assert parity on a 2km radius query.
-
-**1. Spatial Indexing:** Geohash vs S2 vs H3; R-trees vs grids; BallTree vs ANN. `h3`, PostGIS `ST_DWithin`/KNN, `sjoin_nearest`, OSMnx.
-→ NYC TLC demand on H3 res-8; benchmark BallTree vs H3 ring search vs OSMnx ETA for nearest driver.
-
-**2. OpenSearch for Geo:** BM25, `geo_point`/`geo_shape`, `function_score` + distance decay, `edge_ngram`/ICU/phonetic analyzers, `_rank_eval`.
-→ 500K-POI Latin/Arabic/Arabizi autocomplete; report p50/p95 latency and NDCG@5 before/after tuning.
-
-**3. Query Understanding:** Normalize → script detect → intent → entity extraction → transliterate. `rapidfuzz`, `camel-tools`, `libpostal`, BIO tagger.
-→ FastAPI service with parsed address + top-5 fuzzy candidates; Precision@1/MRR sliced by script.
-
-**4. LLM Distillation:** LLM as offline teacher → small online student; KD loss `α·CE + (1-α)·T²·KL`; ONNX INT8; FAISS.
-→ Compare FastText vs distilled MiniLM vs GBM on an accuracy-vs-latency Pareto frontier; pick what ships to the <50ms path.
-
-**5. Unbiased Ranking Labels ⭐:** Position/presentation/selection bias; PBM, Cascade, DBN; IPS and randomization for propensities; hard vs easy negatives. Airflow, Feast, `great_expectations`.
-→ Synthetic sessions with injected bias → DAG → IPS labels; show NDCG naive vs corrected against known ground truth.
-
-**6. Learning to Rank:** Pointwise/pairwise/listwise; LambdaMART `|ΔNDCG|` gradients; NDCG vs MRR vs Hit@k; two-stage retrieve-then-rank; SHAP.
-→ 25–40 features; compare LightGBM `lambdarank`, XGBoost `rank:pairwise`, CatBoost `YetiRank`; serve with measured latency.
-
-**7. Offline Replay & Error Analysis:** Naive replay is biased, so use IPS/SNIPS/doubly-robust. Classify failures as retrieval, ranking, query understanding or label noise. Always segment metrics.
-→ Naive vs off-policy replay comparison; top-3 failures per market/script segment, each mapped to a fix.
-
-**8. Experimentation & Fallback:** Spatial interference breaks SUTVA, so use switchback/geo-cluster designs. SRM checks; mSPRT; calibration + meta-feature confidence model.
-→ Switchback simulator vs user-level A/B; fallback classifier with a cost-justified threshold.
-
-**9. Capstone:** Stitch everything into one system with a formal design doc, MLflow, CI NDCG gate, drift monitoring and a live map demo.
+ 
+**0. Environment & Mental Model (wk 1):** CRS (4326 vs 3857 vs projected); Haversine vs road distance; vector vs raster vs video as three ways of seeing the same city. Docker Compose (PostGIS/Timescale, Redis, MinIO).
+→ Load Overture places for your city into PostGIS and DuckDB; assert parity on a 2 km radius query.
+ 
+**1. Spatial Indexing & Core Stack (wk 2–3):** Geohash vs S2 vs H3; R-trees vs grids; BallTree vs ANN. `h3`, PostGIS `ST_DWithin`/KNN, `sjoin_nearest`, OSMnx.
+→ NYC 2015 taxi demand on H3 res-8; benchmark BallTree vs H3 ring search vs OSMnx ETA for nearest driver.
+ 
+**2. Spatial Statistics & Spatial ML (wk 4–6):** Moran's I / LISA, point patterns (KDE, Ripley's K), spatial lag/error regression (`spreg`), GWR (`mgwr`), kriging, regionalisation, **spatial cross-validation**.
+→ Spatial-modelling report on one city; headline figure = random-vs-blocked CV gap.
+ 
+**3. Raster Data & Remote Sensing (wk 7–8):** Sentinel-2 L2A, SCL cloud masking, composites, spectral indices, COGs, STAC, zonal stats, Earth Engine.
+→ STAC → cloud-free monthly composites → NDVI/NDBI/NDWI per H3 cell; 512 px training chips for Module 4.
+ 
+**4. Deep Learning for Satellite & Aerial Imagery ⭐ (wk 9–12):** U-Net segmentation (buildings, roads), cross-city generalisation, MOSAIKS, Prithvi-EO fine-tune, Siamese change detection, tiled inference.
+→ **Flagship 1:** vectorised urban-growth layer (footprints + roads + change) with an interactive time-slider map.
+ 
+**5. Video CV: Detect, Track, Count ⭐ (wk 13–15):** YOLO11 fine-tuning, Kalman + ByteTrack/BoT-SORT, HOTA/MOTA, line/zone counting, night/rain robustness, TensorRT.
+→ Counting service: per-minute counts by class, lane and direction from traffic-camera video.
+ 
+**6. From Pixels to the Map: Camera Geometry & Speed (wk 16–17):** Pinhole model, homography, ground control points from a basemap, reprojection error, speed from smoothed ground-plane tracks, drift detection.
+→ Georeferenced vehicle tracks (WGS84) and speeds validated on BrnoCompSpeed.
+ 
+**7. Trajectories & Traffic Flow (wk 18–20):** MovingPandas, HMM map matching (FMM), fundamental diagram, Edie metrics, turning movements, OD matrices, MFD, SUMO as ground truth, movement-data privacy.
+→ `src/geosearch/traj` toolkit + study-area dashboard (segment speeds, TMC, OD, queues).
+ 
+**8. Spatio-Temporal Analytics & Forecasting (wk 21–23):** Rolling-origin backtests, seasonal naive → LightGBM → DCRNN/Graph WaveNet on METR-LA, incident detection, prediction intervals, TimescaleDB, Evidently drift.
+→ Segment-state table + forecasting benchmark + traffic-state API with 30-min forecasts.
+ 
+**9. Capstone: Camera-to-Map Traffic System + Urban Layers (wk 24–29):** One system with a design doc, MLflow champion/challenger gates, drift monitoring, MapLibre front end, public demo.
 ```
-Keystroke → Query Understanding (<50ms) → Candidate Gen (H3 + OpenSearch + FAISS)
-  → Feature Join → LTR Re-rank → Fallback Gate → Response
-  ⇣ async: Logs → Labels → Replay → Switchback test → Redeploy
+RTSP/clip → Video worker (TensorRT detector + ByteTrack + zones + homography)
+  → per-minute camera records → segment_state (TimescaleDB) → forecast (5-min job) → incidents
+  → API → MapLibre map (live speeds, forecast slider, incidents, camera frames, satellite layers)
+  ⇣ batch monthly: STAC → composites → indices → segmentation → change → GeoParquet
+  ⇣ async: logs → evaluation → MLflow registry → CI gates → redeploy
 ```
-
-**10. Interview Readiness:** Whiteboard IPS, LambdaMART, metrics, switchback, distillation. Timed system-design drills; record a <15 min capstone walkthrough.
-
+ 
+**10. Interview Readiness (wk 30–34):** Five recorded derivations (spatial CV, camera→speed, tracking metrics, fundamental diagram, ST forecasting); timed system-design mocks; <15-min capstone walkthrough.
+ 
 ---
-
+ 
 ## Key Datasets
-
+ 
 | Dataset | Use |
 |---|---|
-| NYC TLC, Porto Taxi | Sessions, demand, trajectories |
-| Overture Maps, OSM | POI index, road graphs, low-map-quality regions |
-| GeoNames, OpenAddresses, CAMeL/QALB | Cross-script matching, address parsing, Arabic NLP |
-| MSLR-WEB10K, Amazon ESCI, Yandex Click Log | LTR benchmarks, relevance judgments, click models |
-| Open Bandit Pipeline | Off-policy evaluation |
+| NYC Open Data 2015 Yellow Taxi (with coordinates), Overture Maps, OSM | Demand surfaces, POI index, road graphs |
+| Sentinel-2 L2A via Planetary Computer STAC | Composites, indices, change detection |
+| SpaceNet (buildings, roads), LoveDA, xBD / LEVIR-CD | Segmentation and change-detection training |
+| UA-DETRAC, AI City Challenge, VisDrone | Detection, tracking, counting |
+| BrnoCompSpeed | Speed-estimation ground truth (LiDAR/GPS) |
+| pNEUMA, NGSIM, highD, GeoLife | Trajectories, fundamental diagrams, map matching |
+| METR-LA, PEMS-BAY | Traffic forecasting benchmarks |
+ 
 ---
-
+ 
 # Full Detail
-
-
-This roadmap is built around one assumption: the interview panel doesn't want someone who "knows GeoPandas." They want someone who has already made the architectural decisions this role requires — how to turn 200M noisy ride sessions into unbiased ranking labels, how to keep a query-understanding model under a 50ms keystroke budget, and how to decide, per query, whether to trust your own index or fall back to Google/HERE. Every module below is built to produce evidence of exactly that.
-
-**Time budget assumption:** 10–15 hrs/week. Modules 1–4 are foundational and can compress if you already know GIS. Modules 5–9 are where the job actually lives — do not rush them.
-
+ 
+This roadmap is built around one assumption: a GeoAI / transport-analytics interview panel doesn't want someone who "knows GeoPandas and trained a YOLO once." They want someone who has already made the decisions this work requires — how to evaluate a model so the number survives a new city, how to turn a camera's pixels into metres on a map and prove the speeds are right, how to keep a pipeline healthy when a camera moves or a season changes. Every module below is built to produce evidence of exactly that.
+ 
+**Time budget assumption:** 10–12.5 hrs/week. Modules 0–1 are foundational and can compress if you already know GIS. Modules 4–8 are where the job lives — do not rush them.
+ 
+**Repo layout:** `m00/ … m10/` one folder per module (each with its own README = the module write-up), `src/geosearch/` for reusable code, `docs/roadmap.md` (this file), `docs/numbers.md` (every headline number and where it comes from), `docs/stories.md` (interview stories). `data/` and `.env` are git-ignored; never commit API keys, datasets or raw video, and check each camera feed's terms of use before recording it.
+ 
 ---
-
+ 
 ## Module 0 — Environment & Mental Model (Week 1)
-
+ 
 **Theoretical Foundation**
-- The "three worlds" of geo search: (1) the **index world** — how places/POIs are stored and made searchable, (2) the **query world** — how a noisy human keystroke becomes a structured intent, (3) the **ranking world** — how you order candidates once retrieved. Almost every module maps to one of these three.
-- Coordinate reference systems: WGS84 (EPSG:4326, lat/lon, what GPS gives you) vs. Web Mercator (EPSG:3857, what you render) vs. local projected CRS (for true distance/area math). Never compute distance in raw lat/lon degrees.
-- Great-circle distance (Haversine, Vincenty) vs. projected Euclidean distance vs. **road-network distance/ETA** — and why ranking on Haversine alone fails badly in cities with rivers, highways, or one-way systems (a classic "why is the nearest driver 8 minutes away" bug).
-
+- Three representations of one city: **vector** (points, lines, polygons: POIs, roads, footprints), **raster** (grids of pixels: satellite bands, elevation, density surfaces) and **video** (rasters over time, in a camera's coordinate frame, not the Earth's). Almost every module is about converting between these three.
+- Coordinate reference systems: WGS84 (EPSG:4326, lat/lon, what GPS gives you) vs. Web Mercator (EPSG:3857, what you render) vs. local projected CRS / UTM (for true distance/area math). Never compute distance in raw lat/lon degrees. Pixel coordinates in an image are a fourth frame you will later map onto the first three.
+- Great-circle distance (Haversine) vs. projected Euclidean distance vs. **road-network distance/ETA**, and why ranking on straight-line distance fails in cities with rivers, highways and one-way systems.
 **Concrete Tech Stack**
-- Python env: `conda`/`uv`, `geopandas`, `shapely>=2.0`, `pyproj`, `h3`, `s2sphere`, `osmnx`, `folium`/`kepler.gl`, `duckdb` + `duckdb-spatial` (fast local geo SQL, no server needed).
-- Docker Compose stack you'll reuse for the whole roadmap: `postgres+postgis`, `opensearch` + `opensearch-dashboards`, `redis` (for hot geo cache), `minio` (S3-compatible for Overture/OSM extracts).
-
+- Python env: `uv`/`conda`, `geopandas`, `shapely>=2.0`, `pyproj`, `h3`, `osmnx`, `folium`/`lonboard`, `duckdb` + spatial extension (fast local geo SQL, no server needed).
+- Docker Compose stack you'll reuse for the whole roadmap: `postgres` with `postgis` + `timescaledb`, `redis`, `minio` (S3-compatible, for imagery extracts and video clips). GPU: CUDA toolkit + PyTorch on the 4060 once it arrives; Colab until then.
 **Hands-on Production Project**
-- Stand up the full local stack via `docker-compose.yml`. Load an Overture Maps `places` extract for one city into PostGIS **and** OpenSearch simultaneously. Write a script that queries both for "restaurants within 2km of point X" and asserts result parity. This becomes your dev sandbox for every later module.
-
+- Stand up the local stack via `docker-compose.yml`. Load an Overture Maps `places` extract for one city into PostGIS **and** DuckDB. Write a script that queries both for "restaurants within 2 km of point X" and asserts result parity. This becomes your dev sandbox for every later module.
 ---
-
-## Module 1 — Spatial Indexing & the Geospatial Core Stack (Weeks 2–4)
-
+ 
+## Module 1 — Spatial Indexing & the Geospatial Core Stack (Weeks 2–3)
+ 
 **Theoretical Foundation**
-- Why lat/lon pairs are a bad index key: no locality, expensive range queries, can't do "nearby" cheaply on a B-tree.
-- Space-filling curves & hierarchical grids: **Geohash** (base-32, quadtree, has the "edge/boundary" problem where nearby points hash very differently), **S2** (Google, spherical hierarchical, Hilbert-curve-based cells, true spherical geometry, used by MongoDB/Cloud Spanner), **Uber H3** (hexagonal, uniform adjacency — no "corner" neighbor ambiguity like a square grid has, 16 resolutions, designed explicitly for ride-hailing supply/demand indexing — this is Uber's own paper, know it cold).
-- R-trees / R*-trees (bounding-box hierarchical index — what PostGIS `GIST` indexes and Shapely's `STRtree` actually use under the hood) vs. grid indexes: R-trees are better for irregular polygons, grids are better for uniform density aggregation (surge pricing, ETA heatmaps).
-- KD-trees and Ball-trees for exact/approximate nearest-neighbor (`sklearn.neighbors.BallTree` with haversine metric) vs. approximate NN (HNSW/FAISS) for embedding-based candidate generation later.
-
+- Why lat/lon pairs are a bad index key: no locality, expensive range queries, no cheap "nearby" on a B-tree.
+- Space-filling curves & hierarchical grids: **Geohash** (base-32, quadtree, boundary problem), **S2** (Google, spherical, Hilbert-curve cells), **Uber H3** (hexagonal, uniform adjacency, 16 resolutions, designed for supply/demand aggregation). H3 cells become the unit of analysis for Modules 2, 3, 7 and 8, so get the resolution intuition right now (res 7 ≈ 5 km², res 8 ≈ 0.7 km², res 9 ≈ 0.1 km²).
+- R-trees / R*-trees (what PostGIS `GIST` and Shapely's `STRtree` use) vs. grid indexes: R-trees for irregular polygons, grids for uniform-density aggregation (heatmaps, zonal statistics).
+- KD-trees and Ball-trees for exact nearest neighbour (`sklearn.neighbors.BallTree` with haversine metric) vs. approximate NN (HNSW/FAISS) for embedding lookups later.
 **Concrete Tech Stack & Libraries**
-- **H3**: `h3.latlng_to_cell`, `h3.cell_to_latlng`, `h3.grid_disk` (k-ring), `h3.grid_ring`, `h3.cell_to_boundary`, `h3.compact_cells`/`uncompact_cells`, `h3.cell_to_parent`/`cell_to_children` (resolution hierarchy), `h3.grid_distance`. Know how to pick resolution (res 7 ≈ 5.16 km² avg hex, res 9 ≈ 0.1 km² — map resolution choice to "neighborhood-level demand" vs. "street-level ETA").
-- **S2**: `s2sphere.CellId.from_lat_lng`, `S2RegionCoverer` for polygon-to-cell covering (used for geofencing service areas).
-- **PostGIS/SpatiaLite**: `ST_DWithin`, `ST_Intersects`, `ST_Contains`, `ST_Buffer`, `ST_Distance` (spheroid vs. planar), `ST_ClusterDBSCAN`, `GIST` index, `KNN <->` operator for nearest-neighbor search.
-- **GeoPandas/Shapely**: `gpd.sjoin`/`sjoin_nearest`, `shapely.STRtree`, `unary_union`, `.buffer()`, `.simplify()` (Douglas-Peucker, critical for reducing polygon complexity before serving).
-- **PySAL**: `esda.Moran` (spatial autocorrelation — you'll use this in Module 5 to detect systematic geographic bias in labels), `libpysal.weights` (spatial weight matrices, KNN/Queen/Rook contiguity).
-- **OSMnx**: `ox.graph_from_place`, `ox.distance.nearest_nodes`, `ox.shortest_path` (networkx Dijkstra/A* under the hood) — your free substitute for a commercial road-network/ETA engine.
-
+- **H3**: `latlng_to_cell`, `cell_to_latlng`, `grid_disk`, `grid_ring`, `cell_to_boundary`, `compact_cells`/`uncompact_cells`, `cell_to_parent`/`cell_to_children`, `grid_distance`.
+- **PostGIS**: `ST_DWithin`, `ST_Intersects`, `ST_Contains`, `ST_Buffer`, `ST_Distance` (spheroid vs. planar), `ST_ClusterDBSCAN`, `GIST` index, KNN `<->` operator.
+- **GeoPandas/Shapely**: `sjoin`/`sjoin_nearest`, `STRtree`, `unary_union`, `.buffer()`, `.simplify()`.
+- **PySAL**: `esda.Moran`, `libpysal.weights` (KNN/Queen/Rook) — the entry point to Module 2.
+- **OSMnx**: `graph_from_place`, `nearest_nodes`, `shortest_path` — your free road-network engine, reused for map matching in Module 7.
 **Hands-on Production Project**
-"Demand-Supply Heatmap & Nearest-Driver Engine" — Ingest NYC TLC trip data, bucket pickups into H3 res-8 cells, build a rolling 15-min demand surface. Separately build a driver-simulation layer and implement three "nearest driver" strategies: (a) Haversine + BallTree, (b) H3 `grid_disk` expanding-ring search, (c) OSMnx road-network shortest-path ETA. Benchmark latency and accuracy of all three at increasing driver density — this is the exact trade-off analysis a Geo Search interviewer will probe ("when do you use a spatial index vs. a real routing call?").
-
-**Open Datasets:** NYC TLC Trip Record Data (pickup/dropoff lat-lon), Overture Maps `places` + `divisions` themes, OpenStreetMap extracts (Geofabrik), Porto Taxi Trajectory dataset (ECML/PKDD 2015, GPS traces).
-
+"Demand-Supply Heatmap & Nearest-Driver Engine" — Ingest NYC 2015 Yellow Taxi trips (the NYC Open Data release that still carries pickup/dropoff coordinates; post-2016 TLC Parquet files only have zone IDs), bucket pickups into H3 res-8 cells, build a rolling 15-min demand surface. Build a driver-simulation layer and implement three "nearest driver" strategies: (a) Haversine + BallTree, (b) H3 `grid_disk` expanding-ring search, (c) OSMnx shortest-path ETA. Benchmark latency and accuracy at increasing driver density. The resulting `city_cells` table (demand, POI counts, road density, distance to centre per H3 cell) is the input to Module 2.
+ 
+**Open Datasets:** NYC Open Data 2015 Yellow Taxi (`2yzn-sicd`), Overture Maps `places` + `divisions` + `buildings`, OpenStreetMap extracts (Geofabrik).
+ 
 ---
-
-## Module 2 — Search Engine Internals: OpenSearch/Elasticsearch for Geo (Weeks 4–6)
-
+ 
+## Module 2 — Spatial Statistics & Spatial Machine Learning (Weeks 4–6)
+ 
 **Theoretical Foundation**
-- Inverted index fundamentals: terms → postings lists, TF-IDF and **BM25** scoring (know the formula and its `k1`/`b` parameters — you will be asked to explain why BM25 beats raw TF-IDF for short place-name queries).
-- Geo field types: `geo_point` (lat/lon, indexed via a **geohash-based prefix tree / BKD-tree** in Lucene) vs. `geo_shape` (for polygons — service areas, neighborhoods, admin boundaries).
-- Compound scoring: `function_score` query, combining text relevance with a **distance decay function** (`gauss`/`exp`/`linear` decay) — this is literally how you blend "textual match" with "how close is it" before any ML ranker touches the results.
-- Custom analyzers for place-name search: `edge_ngram` tokenizer (for prefix/autocomplete), `ICU analyzer`/`icu_folding` (for cross-script normalization — Arabic diacritics, Cyrillic, CJK), `phonetic` token filter (Soundex/Metaphone/Beider-Morse — critical for transliterated names like "Al-Qahira" vs "Cairo" vs "القاهرة").
-- Fuzzy matching: Damerau-Levenshtein edit distance, `fuzziness: AUTO`, and why naive edit-distance fuzziness breaks for short strings (a 1-character typo on a 4-letter place name changes meaning entirely) — you need length-aware fuzziness tuning.
-
+- **Spatial dependence vs. spatial heterogeneity**: global autocorrelation (Moran's I, Geary's C) vs. local indicators (LISA, Getis-Ord G*); hot spots with significance, not just a coloured map.
+- **Point pattern analysis**: intensity, KDE and bandwidth choice, Ripley's G/K functions against CSR, DBSCAN on points.
+- **Spatial regression**: why OLS residuals are autocorrelated on spatial data; spatial lag vs. spatial error models; Lagrange-multiplier specification tests; **geographically weighted regression** (GWR/MGWR) as the "coefficients vary over space" alternative and how to read local-coefficient maps.
+- **Geostatistics**: variograms, ordinary kriging vs. IDW, when each is right.
+- **Spatial cross-validation**: random K-fold leaks information through spatial autocorrelation and over-states accuracy; blocked, buffered and leave-region-out folds (Roberts et al. 2017); area of applicability. This is the single most interview-relevant idea in the module and it recurs in Modules 4, 5 and 8.
+- Support, scale and the **MAUP** — why results change when you change the cell size.
 **Concrete Tech Stack**
-- `opensearch-py` client, index mapping design (`geo_point`, `geo_shape`, `search_as_you_type` field type, `completion` suggester with fuzzy support).
-- Custom analyzer chain: `char_filter` (strip diacritics) → `tokenizer` (`edge_ngram`, min_gram 2 max_gram 15) → `token_filter` (`icu_folding`, `asciifolding`, synonym filter for common abbreviations "St." → "Street").
-- `geo_distance` query/sort, `geo_bounding_box`, `function_score` with `gauss` decay on `geo_point`.
-- Relevance tuning workflow: **Ranking Evaluation API** (`_rank_eval`) to score query sets against a judgment list — this is your offline harness precursor for Module 7.
-
+- `esda` (Moran, Moran_Local, G_Local), `libpysal.weights`, `pointpats`, `spreg` (`OLS`, `ML_Lag`, `ML_Error`, LM tests), `mgwr` (`Sel_BW`, `GWR`, `MGWR`), `PyKrige` / `scikit-gstat`, `spopt` (regionalisation: SKATER, max-p), `spacv` / `scikit-learn` custom splitters for blocked CV, `LightGBM` for the tabular model.
 **Hands-on Production Project**
-"Cross-Script Place Autocomplete Engine" — Build an OpenSearch index of ~500K POIs (Overture Places, multi-country) with a custom analyzer pipeline supporting Latin + Arabic + Arabizi (Arabic written in Latin letters, e.g. "ma3adi" for "المعادي"/Maadi). Implement a `function_score` query blending BM25 text relevance with a distance-decay geo signal, tuned via `_rank_eval` against a judgment list you hand-label. Deliverable: p50/p95 query latency report + relevance report (NDCG@5) before/after custom analyzer tuning.
-
-**Open Datasets:** Overture Maps Places (multilingual names field is ideal for this), GeoNames (alternate names table — literally built for cross-script/transliteration testing), Arabizi transliteration corpora (e.g., research corpora from CALIMA/MADAMIRA/Arabic-Arabizi parallel datasets).
-
+"Spatial Modelling Report for One City" — On Module 1's `city_cells`: point patterns and hot spots of demand; OLS → lag → error → GWR on demand vs. urban-form features with local-coefficient maps; kriging of a sampled variable vs. IDW on held-out points; then a **spatial-CV benchmark**: LightGBM with random vs. blocked vs. leave-district-out folds, with and without spatial lag features. Deliverable: `m02/README.md` with one figure per section; the random-vs-blocked CV gap is the headline figure. Record a 6-minute explanation of spatial CV and GWR.
+ 
+**Open Datasets:** Your own `city_cells` table (Module 1), Overture Places/Buildings, any open-data sensor or census layer for your city.
+ 
 ---
-
-## Module 3 — Query Understanding: Cleaning, Typos, Cross-Script Matching (Weeks 6–9)
-
+ 
+## Module 3 — Raster Data & Remote Sensing (Weeks 7–8)
+ 
 **Theoretical Foundation**
-- Query understanding pipeline as a cascade: normalization → language/script detection → tokenization → intent classification (place-name search vs. category search vs. address) → entity extraction (street, city, landmark, house number) → transliteration/translation.
-- Typo tolerance beyond edit distance: **keyboard-adjacency-aware** edit costs (a "typo" swapping adjacent QWERTY keys should cost less than a random substitution), phonetic algorithms (Soundex, Double Metaphone, and for Arabic specifically, **Buckwalter transliteration** as a canonical intermediate representation).
-- Cross-script matching as a retrieval problem, not just a string-matching one: transliteration is many-to-many (one Arabic name → multiple valid Latin spellings), so exact matching fails — you need either (a) a canonicalization/normalization layer, or (b) an embedding-based fuzzy match.
-- Address parsing as sequence labeling (BIO tagging: house_number, street, city, postal_code) — this is a **NER problem**, not a regex problem, in messy/informal-address markets.
-
+- Remote-sensing fundamentals: sensors, spatial/spectral/temporal resolution, radiance vs. reflectance, Level-1C vs. **Level-2A** surface reflectance; Sentinel-2 bands and the **Scene Classification Layer (SCL)**.
+- Cloud masking and compositing: SCL-based masks, median vs. best-pixel monthly composites, the cloud-shadow silent error.
+- Spectral indices: NDVI, NDBI, NDWI and what each says about an urban surface; per-pixel trends over years as a cheap change signal.
+- Cloud-native geo: **COG** internals (tiling, overviews, HTTP range reads), **STAC** catalogues, lazy evaluation with Dask-backed xarray.
+- Sensors beyond optical: Sentinel-1 SAR basics, nighttime lights, DEMs; what each adds to urban analysis.
+- Zonal statistics as the bridge from raster back to your H3 vector world.
 **Concrete Tech Stack**
-- `rapidfuzz` (fast Levenshtein/Jaro-Winkler, `process.extract` for top-k fuzzy candidates), `jellyfish` (Soundex, Metaphone, NYSIIS), `python-Levenshtein`.
-- `polyglot`/`langdetect`/`fasttext` `lid.176` model for language identification per query.
-- `pyicu` / `unicodedata` normalization (NFKD/NFKC) for diacritic stripping.
-- Transliteration: `camel-tools` (CAMeL Lab's Arabic NLP toolkit — Buckwalter transliteration, Arabic normalization, dialect ID — this is the field-standard library, know its `CharMapper`, `dediac_ar`, `normalize_alef_ar`).
-- Address parsing: `libpostal` (the open-source global address parser trained on OpenAddresses/OSM — this is what most industry geocoders bootstrap from) via `pypostal` bindings; alternatively fine-tune a lightweight token-classification model (`bert-base-multilingual-cased` fine-tuned as a BIO tagger via `transformers` `AutoModelForTokenClassification`).
-- Query rewriting: synonym/abbreviation dictionaries, learned query-to-query embedding similarity (build with `sentence-transformers`, e.g. `paraphrase-multilingual-MiniLM-L12-v2`) for "did you mean" and query expansion.
-
+- `rasterio` (windows, reprojection, writing COGs), `rioxarray`, `xarray` + `dask`, `pystac-client` + `stackstac` / `odc-stac` against the **Microsoft Planetary Computer** STAC API (free, no account for Sentinel-2), `spyndex` for indices, `exactextract` / `rasterstats` for zonal stats, `geemap` + Earth Engine for the same workflow at continental scale.
 **Hands-on Production Project**
-"Query Understanding Microservice" — FastAPI service that takes a raw keystroke-level query string and outputs: detected language/script, normalized/transliterated form, parsed address components (BIO tags), and top-5 fuzzy-matched canonical place candidates with confidence scores. Test set: deliberately noisy queries (typos, mixed Arabic/Arabizi/English, missing diacritics, informal landmarks like "next to the blue mosque"). Report precision@1 and MRR against a hand-labeled gold set, broken out by script/language — this per-segment error breakdown is exactly the "error analysis" muscle the JD calls out.
-
-**Open Datasets:** OpenAddresses, libpostal's training corpus (OSM + OpenAddresses), GeoNames alternate-names, CoNLL-style NER sets adapted for address entities, QALB (Qatar Arabic Learners' Corpus, for Arabic typo/correction patterns), synthetic Arabizi generation (rule-based, you'll build a small generator — this itself is a good interview talking point on synthetic data for low-resource cross-script problems).
-
+"Analysis-Ready Sentinel-2 Pipeline for Your City" — STAC search → one year of Sentinel-2 L2A as a lazy stack → SCL cloud masking → monthly composites → NDVI/NDBI/NDWI → `exactextract` zonal stats per H3 cell joined to `city_cells`; a 2–3-year NDVI/NDBI trend notebook answering "where did the city grow?"; the same composite reproduced in Earth Engine to compare effort and limits. Final Saturday: cut 512×512 training chips (Sentinel-2 + a high-resolution source) with building masks from Overture, spatially split train/val/test — the inputs to Module 4.
+ 
+**Open Datasets:** Sentinel-2 L2A (Planetary Computer / Copernicus Data Space), Sentinel-1 GRD, VIIRS nighttime lights, Copernicus DEM, Overture `buildings`.
+ 
 ---
 
-## Module 4 — LLM Distillation Under Strict Latency Budgets (Weeks 9–11)
-
+## Module 4 — Deep Learning for Satellite & Aerial Imagery (Weeks 9–12) ⭐ Flagship 1
+ 
 **Theoretical Foundation**
-- The core tension the JD names explicitly: LLMs give you high-quality *offline* labels/judgments but are far too slow (100ms–2s+) for the **<50ms keystroke-path** online serving budget. The pattern is always: **LLM as offline teacher/labeler → small fast model as online student.**
-- Knowledge distillation theory: soft-label matching via KL divergence between teacher and student output distributions (temperature-scaled softmax), combined with a hard-label cross-entropy term — the classic Hinton et al. distillation loss: `L = α·CE(y_true, student) + (1-α)·T²·KL(softmax(teacher/T), softmax(student/T))`.
-- Model compression paths: **architecture distillation** (BERT → DistilBERT/TinyBERT/MiniLM-style smaller transformer), **task-specific distillation** (LLM zero/few-shot labels → simple classifier: FastText/logistic regression/small MLP on embeddings, or gradient-boosted trees on engineered features), and **quantization** (FP32 → INT8 via `onnxruntime` quantization, post-training or quantization-aware).
-- Latency budget accounting: for a 50ms keystroke path you typically can't even afford a transformer forward pass on CPU at scale — the realistic pattern is precomputed embeddings (via an offline transformer) + an online **approximate nearest-neighbor lookup** (FAISS/HNSW) or a tiny (few-KB) FastText/n-gram model, not a live transformer call.
-
+- CNN and **semantic segmentation** refresher: U-Net, encoder–decoder, loss functions for imbalanced masks (BCE + Dice, focal), IoU/F1 and boundary F1.
+- What is different about geospatial DL: tiling and samplers, CRS-aware datasets, multispectral inputs and per-band normalisation, label noise from OSM/Overture, and the fact that **spatial autocorrelation makes random train/test splits dishonest** (Module 2 again).
+- Thin structures: road segmentation, class imbalance, from mask to road graph (skeletonisation) and the APLS metric idea.
+- **Cross-city generalisation** as the real test; why a model trained on one city drops on another and how to diagnose it.
+- **Foundation models for Earth observation** (Prithvi-EO-2.0, TorchGeo pretrained Sentinel-2 backbones) and the critique of their evaluation; **MOSAIKS** (random convolutional features + ridge) as the cheap strong baseline you must beat.
+- **Change detection**: Siamese architectures, bi-temporal datasets (LEVIR-CD, xBD), change F1.
+- Inference at scale: tiling with overlap and blending, stitching, throughput on an 8 GB card.
 **Concrete Tech Stack**
-- Teacher labeling: batch offline calls to a large LLM (via Anthropic/OpenAI API or a self-hosted open model) with structured-output prompting to produce query→intent, query→canonical-place, or relevance judgments at scale — log everything to a labeled dataset.
-- Student models: `fasttext` (subword n-gram embeddings, near-instant CPU inference, genuinely used in production autocomplete systems), `sentence-transformers` distillation utilities, `transformers.Trainer` with a custom `DistillationTrainer` (override `compute_loss` for the KD loss above), TinyBERT/MiniLM checkpoints as distillation targets.
-- Serving-side compression: `onnx`/`onnxruntime` (`onnxruntime.quantization.quantize_dynamic`), `optimum` (HuggingFace's ONNX/quantization toolkit), benchmark with `onnxruntime`'s CPU execution provider under realistic QPS.
-- ANN for embedding-based candidate generation: `faiss` (`IndexHNSWFlat`, `IndexIVFPQ` for compressed vectors at scale), or `hnswlib` directly for a lighter dependency footprint.
-
+- `torch`, `torchgeo` (datasets, samplers, pretrained weights), `segmentation_models.pytorch` (U-Net with ResNet-34 encoder as the baseline), `lightning`, `albumentations`, `rasterio` for tiled inference, `shapely`/`geopandas` for vectorisation and polygon simplification, **Open-CD** for change-detection configs, `samgeo` (SAM) for labelling assistance, `mlflow` for experiment tracking, GeoParquet for outputs.
+- Training recipe for the 4060: 512 px tiles, batch 8, bf16/fp16 mixed precision, gradient accumulation; Prithvi fine-tune on Colab.
 **Hands-on Production Project**
-"Distilled Query-Intent Classifier at 10ms p99" — Use an LLM to label 20–50K real/synthetic queries with intent classes (address / POI-name / category / landmark-relative) and extracted entities. Train three student candidates: (1) FastText classifier, (2) distilled MiniLM via KD loss, (3) GBM on hand-engineered + embedding features. Quantize the transformer student to INT8 via ONNX. Load-test all three with `locust`/`wrk` for p50/p95/p99 latency on CPU, and report the accuracy-vs-latency Pareto frontier — explicitly recommend which one ships to the <50ms keystroke path and which is reserved for slower downstream re-ranking. This accuracy/latency trade-off table is the single most senior-signal artifact in this whole roadmap.
-
-**Open Datasets:** MS MARCO / Amazon ESCI query sets adapted for intent-labeling practice, your own Module 3 query corpus re-used, CLINC150 or Banking77 as generic intent-classification distillation practice sets before you apply the technique to geo queries.
-
+"Urban-Growth Layer for Your City" — (1) Baseline U-Net for buildings on SpaceNet, improved (loss, encoder, TTA), post-processed to polygons and compared with Overture/Microsoft footprints. (2) SpaceNet 3 roads → mask → road graph. (3) Evaluate the buildings model on a city it never saw; diagnose the drop. (4) MOSAIKS baseline for building density per cell. (5) Prithvi-EO-2.0 fine-tune for built-up segmentation vs. the U-Net on identical splits. (6) Siamese change detection trained on LEVIR-CD/xBD, applied to bi-temporal Sentinel-2 composites from Module 3 and validated against the NDBI trend. (7) Evaluation that survives review: spatially blocked test metrics with CIs, per-density strata, boundary F1, calibration. Deliverable: one GeoParquet layer (footprints + roads + change polygons), an interactive map with a time slider, dataset and model cards, `make reproduce` rebuilding the metrics table, and a recorded 10-minute walkthrough.
+ 
+**Open Datasets:** SpaceNet 1/2 (buildings), SpaceNet 3 (roads), LoveDA, LEVIR-CD, xBD / xView2, Microsoft Building Footprints, Overture `buildings`, your Module 3 chips.
+ 
 ---
-
-## Module 5 — Data Engineering & Labeling: From Logs to Trustworthy Ranking Labels (Weeks 11–15)
-
-**This is the module the JD weights heaviest ("build the label pipeline... correcting position bias & presentation effects") — treat it as the centerpiece of your portfolio.**
-
+ 
+## Module 5 — Video Computer Vision: Detect, Track, Count (Weeks 13–15) ⭐ Flagship 2, part 1
+ 
 **Theoretical Foundation**
-- The core problem: a click or a completed ride is **not** a ground-truth relevance label. It's confounded by (a) **position bias** (top results get clicked more regardless of relevance — examine hypothesis: `P(click) = P(examine|position) × P(relevance|query,doc)`), (b) **presentation bias** (bold text, photo thumbnails, "verified" badges change click-through independent of true relevance), (c) **selection bias** (you only observe outcomes for items you chose to show).
-- Click models: **Position-Based Model (PBM)** and **Cascade Model** (user examines results top-to-bottom, stops at first click) and **Dynamic Bayesian Network (DBN)** model — know how each factorizes examination probability from relevance probability, and when cascade assumptions break for map/grid UIs (geo search results are often shown on a map, not a list — classic list-based cascade assumptions don't hold, and you need a 2D/spatial examination model instead).
-- Bias correction techniques: **Inverse Propensity Scoring (IPS)** — reweight each observed click by `1/P(examine|position)` to get an unbiased relevance estimate; **counterfactual learning-to-rank** (Joachims et al.) trains directly on IPS-weighted pairs; **result randomization / intervention harvesting** (periodically inject randomized result order to directly measure position-effect propensities — the RandTop-n / RandPair method) is how you *estimate* the propensity curve in the first place rather than assuming one.
-- Implicit signal hierarchy for ride-hailing specifically: impression → tap/click → address confirmed → ride requested → ride completed → (optionally) rating. Each transition is a different "relevance signal" with different noise; a completed ride is a much stronger positive label than a tap, but it's rarer and slower to arrive (label latency vs. label quality trade-off — discuss this explicitly with interviewers).
-- Negative sampling strategy: naive "everything not clicked is negative" is wrong at scale (most non-clicks are just unexamined) — use examined-but-not-clicked as hard negatives, and random/popularity-based sampling for easy negatives, mirroring the two-negative-type approach used in industrial LTR/retrieval systems (cf. how DPR/ANCE style retrieval training samples negatives).
-
+- Object detection refresher: anchor-based vs. anchor-free, NMS, IoU, mAP@0.5 and mAP@0.5:0.95; the YOLO family and what changed in YOLO11.
+- **Fine-tune, don't train from scratch**: 300–500 labelled frames from your target cameras beat 100K generic frames; active learning (mine low-confidence frames, label, retrain, measure gain per frame).
+- **Multi-object tracking**: Kalman filter prediction/update, Hungarian association, SORT → ByteTrack (associate low-score boxes too) → BoT-SORT (camera-motion compensation + appearance). Metrics: **HOTA** vs. MOTA vs. IDF1, and why ID switches are invisible in a demo and fatal for counts.
+- Counting with lines and zones: per-direction and per-lane logic, double counting, occlusion.
+- Robustness: night, rain, glare, low FPS; measuring count accuracy under each.
+- Image formation (prep for Module 6): why pixel distance isn't metres.
+- Deployment: ONNX/TensorRT export, FP16/INT8, FPS at 1 vs. 4 streams on an 8 GB card.
 **Concrete Tech Stack**
-- Pipeline orchestration: `Apache Airflow` or `Dagster` DAGs (session reconstruction job → propensity estimation job → label materialization job → feature-store write).
-- Session reconstruction: `pandas`/`polars` or `PySpark` for large-scale session windowing (group raw event logs into sessions by user_id + time-gap threshold), sessionization logic with `pyspark.sql.Window`.
-- Feature store pattern: `Feast` (open-source feature store) to serve consistent point-in-time-correct features to both training and serving — critical to avoid **training/serving skew**, which you should be ready to discuss as a named failure mode.
-- Bias diagnostics: implement PBM examination-probability estimation from a randomized-interleaving experiment (simulate this since you won't have live traffic — inject synthetic position randomization into your NYC TLC-derived "sessions"), plot click-through-rate by position to visually demonstrate position bias, then show the corrected vs. uncorrected label distributions.
-- Data quality: `great_expectations` for label-pipeline data contracts (schema, null-rate, distribution drift checks on the labels themselves).
-
+- `ultralytics` (YOLO11 train/val/predict/track/export/benchmark), `supervision` (`LineZone`, `PolygonZone`, annotators), `boxmot` or Ultralytics built-in ByteTrack/BoT-SORT, **TrackEval** for HOTA, **CVAT** for labelling, `opencv-python`, `ffmpeg`, TensorRT via Ultralytics export, Parquet/Postgres sink.
 **Hands-on Production Project**
-"Unbiased Ranking-Label Pipeline from Synthetic Ride Sessions" — Simulate a realistic session log from NYC TLC data + a synthetic search-results-shown log (impressions with position, simulated clicks with an injected position-bias function you control so you have ground truth to validate against). Build an Airflow DAG: raw events → sessionization → **IPS-based label correction** → feature-store-ready training table. Deliverable: a report showing (a) the raw click-position curve, (b) your recovered propensity curve from randomized-position experiments, (c) NDCG of a ranker trained on naive labels vs. IPS-corrected labels, measured against your known ground-truth relevance (since it's synthetic, you can prove correction actually helps — this is the single most compelling proof-of-competence artifact for this role).
-
-**Open Datasets:** NYC TLC Trip Data (base sessions), Yandex Personalized Web Search Click Log (a real, large, industrial-scale click-log dataset with position info — the closest public analogue to what you'd get internally), Microsoft's `MSLR-WEB10K`/`WEB30K` (pre-built LTR feature+label sets for practicing the correction techniques before applying to your own pipeline), Criteo's counterfactual/off-policy datasets if available for IPS practice.
-
+"Traffic Counting Service v1" — Collect clips from 2–3 public traffic cameras (check terms of use) plus UA-DETRAC; label 150 frames in CVAT; fine-tune YOLO11s and review night/rain failures; run ByteTrack and BoT-SORT on a labelled UA-DETRAC sequence and score with TrackEval, tuning thresholds on HOTA; per-lane, per-direction counts against manual counts; robustness table (night/rain, 5/10/25 FPS); TensorRT FP16/INT8 benchmarks; drone footage (VisDrone) with tiling for tiny objects; one active-learning round. Deliverable: a service that takes a stream/clip + camera config and emits per-minute counts by class, lane and direction to Parquet/Postgres; a 60-second annotated demo video; `m05/README.md`.
+ 
+**Open Datasets:** UA-DETRAC, AI City Challenge (request access in week 13 — approval takes weeks), VisDrone, your own camera clips.
+ 
 ---
-
-## Module 6 — Learning to Rank & Geo Relevance (Weeks 15–19)
-
+ 
+## Module 6 — From Pixels to the Map: Camera Geometry & Speed (Weeks 16–17) ⭐ Flagship 2, part 2
+ 
 **Theoretical Foundation**
-- LTR problem framing: **pointwise** (regression/classification on individual relevance) vs. **pairwise** (learn to order pairs correctly — RankNet-style) vs. **listwise** (optimize a ranking metric directly over the whole result list — LambdaMART/LambdaRank, ListNet, YetiRank).
-- **LambdaMART** deep-dive: it's gradient-boosted trees where the gradient ("lambda") for each pair is the RankNet pairwise gradient *scaled* by the change in NDCG if that pair were swapped (`|ΔNDCG|`) — this is why LambdaMART directly optimizes a ranking metric despite using a pairwise loss under the hood. Be able to derive/explain this on a whiteboard.
-- Evaluation metrics and their failure modes: **NDCG@k** (handles graded relevance, position-discounted — know the DCG formula `Σ (2^rel_i - 1)/log2(i+1)` and why the `2^rel-1` gain function matters for highly-relevant items), **MRR** (only cares about the first relevant result — good for navigational/single-answer queries like "take me to my exact address"), **Hit@k**/**Recall@k** (candidate-generation-stage metric, before fine ranking).
-- Two-stage retrieval-then-rank architecture (matches how virtually every large-scale search/rec system is built): cheap **candidate generation** (geo radius filter + BM25/ANN) narrows millions of POIs to ~100–1000, then an **expensive ranker** (GBDT or learned model) reorders the top candidates using rich features.
-- Spatial + behavioral feature engineering for the ranker: distance-decay features (multiple bandwidths), H3-cell historical demand/popularity, time-of-day/day-of-week seasonality, query-place text-match scores (BM25 score as a *feature*, not just a filter), user-specific history (frequent destinations, home/work inferred locations), real-time supply signals (driver density nearby), POI quality signals (completeness of address, verification status).
-- Position/exploration trade-off at serving time: pure exploitation (always show gbdt's top-1) starves the label pipeline of exploration data — tie this back to Module 5 by discussing epsilon-greedy or Thompson-sampling-style controlled exploration in the serving layer.
-
+- **Camera models**: pinhole, intrinsics, extrinsics, lens distortion; what you can and cannot recover from a single fixed camera.
+- **Homography**: plane-to-plane mapping between the image and the road plane; why it works for traffic (vehicles live on a plane) and where it fails (hills, overpasses, tall vehicles' bounding boxes).
+- **Ground control points**: 4–6 well-spread GCPs matched between a video frame and a basemap/satellite image (lane markings, crossings); solving the homography; reprojection error as the quality metric.
+- Projection chain: bottom-centre of a track → ground plane → UTM → WGS84; smoothing; **speed from smoothed ground-plane positions over ≥1 s windows** (frame-to-frame speeds are noise).
+- Validation against ground truth (BrnoCompSpeed: LiDAR/GPS) before trusting any speed from your own cameras.
+- **Camera drift**: detecting when the homography stops being valid (camera moved, zoom, wind) and automating the check.
+- Drone video (pNEUMA, highD) as the georeferenced-by-construction counterpart.
 **Concrete Tech Stack**
-- `LightGBM`: `objective='lambdarank'` and `objective='rank_xendcg'`, `label_gain`, `group` parameter for query grouping, `lgb.train` with `eval_metric='ndcg'`.
-- `XGBoost`: `objective='rank:pairwise'`, `'rank:ndcg'`, `'rank:map'`, `DMatrix` with `set_group()`.
-- `CatBoost`: `YetiRank`/`YetiRankPairwise` loss (CatBoost's listwise objective, often strong out-of-the-box), native categorical feature handling (useful for city/country/POI-category features without manual encoding).
-- Feature engineering: `featuretools` or hand-rolled feature pipelines joined against your Module 5 feature store; SHAP (`shap.TreeExplainer`) for ranker feature-importance and per-query explainability (you will be asked "why did result X rank above Y" in an interview — be ready to answer with SHAP).
-- Two-stage serving stub: candidate generation via OpenSearch (Module 2) + FAISS (Module 4) → feature join → LightGBM `predict()` re-rank, wrapped in a FastAPI endpoint with a p99 latency budget you explicitly measure.
-
+- `opencv-python` (`findHomography`, `perspectiveTransform`, calibration), `pyproj` (UTM ↔ WGS84), `numpy`/`scipy` smoothing (Savitzky–Golay / Kalman), `geopandas` → GeoParquet trajectories, a per-camera YAML calibration file, `lonboard`/MapLibre to publish the layer.
 **Hands-on Production Project**
-"End-to-End Geo LTR System" — Using your Module 5 labeled sessions, engineer 25–40 ranking features (spatial, textual, behavioral, temporal). Train and compare LightGBM `lambdarank`, XGBoost `rank:pairwise`, and CatBoost `YetiRank` on the same feature set; report NDCG@5, NDCG@10, MRR, and Hit@3 for each. Run a SHAP analysis to explain the top-3 features driving ranking decisions. Wire the trained model into a FastAPI two-stage retrieval-then-rank service (candidate gen from Module 2's OpenSearch index → GBDT re-rank) with measured end-to-end p50/p95 latency.
-
-**Open Datasets:** `MSLR-WEB10K`/`WEB30K` (canonical public LTR benchmark — do a first pass here before your own data to sanity-check your LightGBM/XGBoost/CatBoost pipeline against known baselines), Amazon **ESCI** (Shopping Queries Dataset — real e-commerce search-relevance judgments, structurally very close to a geo-search relevance-judgment set), your own Module 5 synthetic-session output, Yelp Open Dataset (business attributes + reviews, good source of "POI quality" features).
-
+"Georeferenced Traffic Layer v1" — Per-camera calibration files with reprojection errors; Module 5 tracks projected to WGS84 and written as GeoParquet trajectories; speed estimation implemented and validated on **BrnoCompSpeed** (tuned window and smoothing, error table against truth); the same applied to your own cameras with sanity checks against speed limits and free-flow conditions; an automated homography-drift check. Deliverable: per-camera, per-minute records (counts + speeds + positions) with coordinates, published as a map layer; `m06/README.md` with calibration method, errors, validation, limits.
+ 
+**Open Datasets:** BrnoCompSpeed, pNEUMA (EPFL), highD, your own cameras.
+ 
 ---
-
-## Module 7 — Evaluation: Offline Replay Harness & Error Analysis (Weeks 19–22)
-
+ 
+## Module 7 — Trajectories & Traffic Flow (Weeks 18–20)
+ 
 **Theoretical Foundation**
-- **Offline replay evaluation**: instead of only computing NDCG on a static labeled test set, replay *recorded real sessions* through your new model and check whether it would have surfaced the place the user actually completed a ride to (counterfactual scoring). This directly mirrors the JD's "offline replay harness scoring recorded sessions against real rides."
-- Counterfactual evaluation caveat: replaying a new ranker against logs collected under an *old* ranker's policy is itself subject to the same position/selection bias as Module 5 — you generally need **off-policy evaluation** techniques (IPS-weighted replay, or a doubly-robust estimator) to get an unbiased estimate of a new policy's performance from old logs, not naive replay.
-- Error analysis taxonomy for search/ranking systems: **retrieval failures** (correct answer never made it into the candidate set — a Recall@k problem, fixed by better candidate generation/indexing) vs. **ranking failures** (correct answer was retrieved but ranked too low — a ranker/feature problem) vs. **query-understanding failures** (query was mis-parsed/mis-transliterated before search even ran) vs. **label-noise-induced failures**. Always slice failures this way before proposing a fix — this diagnostic discipline is a strong senior-level signal.
-- Segmented evaluation: never report a single aggregate metric. Slice by geography (market maturity — the JD explicitly cares about "countries where maps are wrong/missing"), query language/script, query length, new vs. returning user, time-of-day. A model that's +5% NDCG overall but -10% in your lowest-map-quality markets is a regression, not a win, for this role specifically.
-
+- **Trajectories as objects**: TrajectoryCollection, speed/direction, stop detection, splitting, generalisation.
+- **Map matching**: HMM map matching (Newson & Krumm) — emission vs. transition probabilities, failure modes; this is where CV meets GIS: your camera tracks only become road-segment observations after map matching.
+- **Traffic flow theory**: flow, density, speed; q = k·v; Greenshields and the **fundamental diagram**; Edie's generalised definitions; shockwaves (LWR intuition); the **macroscopic fundamental diagram** (Geroliminis & Daganzo) at city scale.
+- Intersection analytics: turning-movement counts from tracks vs. zone-based counts.
+- **OD matrices** from trajectories at H3 zones; the identifiability problem; flow maps.
+- Simulation as ground truth: SUMO from OSM, exporting trajectories and detector counts to test your estimators.
+- Anomalies from trajectories: stops, queues, wrong-way, near-misses (time-to-collision).
+- **Privacy and ethics of movement data**: re-identification risk, aggregation thresholds, k-anonymity for OD; write a data policy.
 **Concrete Tech Stack**
-- Build a `ReplayHarness` class: given a historical session (query, shown-results, ground-truth completed-ride place) and a candidate new model, recompute rankings and score NDCG/MRR/Hit@k "as if" the new model had served that session — implemented in `pandas`/`polars` with vectorized batch scoring for speed.
-- Off-policy evaluation: implement IPS-weighted and self-normalized IPS (SNIPS) estimators; optionally a simple doubly-robust estimator combining a direct-reward model with IPS correction.
-- Error taxonomy tooling: automatic classification of each failed session into retrieval/ranking/query-understanding buckets via rule-based diagnostics (was gold item in candidate set at all? at what raw rank pre-model?).
-- Dashboarding: `streamlit` or `Plotly Dash` app for slicing error rate and NDCG by market/language/segment — build this as a reusable internal tool, not a one-off notebook, and say so explicitly in your portfolio write-up.
-
+- `movingpandas`, `scikit-mobility`, **FMM** (Fast Map Matching) on an OSMnx graph, `osmnx`, `sumo` + `traci`, `geopandas`, `h3`, `streamlit` + `lonboard` for the dashboard.
 **Hands-on Production Project**
-"Replay Harness + Segmented Error Analysis Report" — Build the `ReplayHarness` over your Module 6 model and Module 5 session data. Compute off-policy-corrected performance estimates (IPS/SNIPS) vs. naive replay, and quantify how much naive replay over/understates true performance. Produce a segmented error-analysis report (by simulated "market maturity" tier and by query script/language from Module 3) identifying the top 3 failure categories per segment, each with a proposed fix mapped back to a specific earlier module (e.g., "Arabizi query failures are query-understanding failures → revisit Module 3 transliteration coverage").
-
-**Open Datasets:** Continue using your accumulated synthetic pipeline (this module is inherently about *your own system's* logs); for off-policy-evaluation method validation specifically, the Criteo/Open Bandit Pipeline (OBP) datasets are purpose-built public benchmarks for testing IPS/SNIPS/doubly-robust estimators before trusting them on your own data.
-
+"Trajectory Toolkit + Study-Area Dashboard" — Map-match pNEUMA and GeoLife trajectories with FMM; compute fundamental diagrams from NGSIM US-101 and pNEUMA and compare with camera-derived counts; turning-movement counts at one intersection; OD matrices at H3 zones; reproduce the MFD idea on pNEUMA; SUMO network + simulated day to validate every estimator; anomaly detection with precision on hand-checked cases. Package it as `src/geosearch/traj` (loading, cleaning, map matching, Edie metrics, TMC, OD) with tests on SUMO data. Deliverable: a Streamlit/lonboard dashboard of segment speeds, turning movements, OD flows and queue lengths for one day; `m07/README.md` including the privacy policy.
+ 
+**Open Datasets:** pNEUMA, NGSIM (US-101, I-80), GeoLife, highD, SUMO outputs, your Module 6 tracks.
+ 
 ---
-
-## Module 8 — Online Experimentation & Confidence/Fallback Modeling (Weeks 22–25)
-
+ 
+## Module 8 — City-Scale Spatio-Temporal Analytics & Forecasting (Weeks 21–23)
+ 
 **Theoretical Foundation**
-- A/B testing fundamentals for spatial features specifically: **network/spatial interference** — ride-hailing experiments violate the standard SUTVA (Stable Unit Treatment Value Assumption) because treating drivers/riders in one geographic cell affects supply available to neighboring cells. Standard user-level randomization can be badly biased; you need **geo-based (switchback or cluster) randomization** — randomize treatment by H3 cell or by city, rotate treatment over time windows (switchback design), and this is a very well-known ride-hailing-specific experimentation pattern worth naming explicitly in an interview.
-- Statistical power and sample-ratio-mismatch (SRM) checks — an SRM alert is often the *first* sign that a geo-randomized experiment is broken (e.g., routing logic accidentally correlated with the randomization key).
-- Sequential testing / always-valid p-values (mSPRT, group-sequential designs) for shipping decisions faster than a fixed-horizon test would allow, relevant for a "keep models healthy post-launch" cadence.
-- **Confidence modeling for fallback logic** — this is a distinct, JD-named responsibility: train a secondary model whose job is *not* "what's the best result" but "should I trust my own top result at all, or fall back to an external provider?" Frame it as calibration + out-of-distribution detection: (a) **probability calibration** of your ranker's top-score (Platt scaling / isotonic regression via `sklearn.calibration.CalibratedClassifierCV`) so a "0.9 confidence" genuinely means ~90% of such cases are correct, (b) an auxiliary "coverage" classifier trained on meta-features (candidate-set size, top-score margin over 2nd place, map data completeness in that H3 cell, query-understanding confidence from Module 4) predicting P(top result is correct) directly, (c) threshold selection via precision-recall trade-off curve — you're choosing an operating point that trades "own-answer coverage" against "own-answer error rate," which is a business decision you should be able to frame in cost terms (cost of wrong own-answer vs. cost/latency of external-provider fallback call).
-
+- Forecasting fundamentals: decomposition, **baselines (historical average, seasonal naive)** that are hard to beat at 15-minute horizons, rolling-origin backtests, per-horizon evaluation (15/30/60 min).
+- Real sensor data: loop detectors, missingness, the sensor graph, daily profiles (METR-LA, PEMS-BAY, PeMS).
+- Gradient-boosted forecasting with lag, calendar and neighbour features across all sensors.
+- **Spatio-temporal graph neural networks**: message passing, GCN/GAT, over-smoothing; DCRNN's diffusion convolution; Graph WaveNet; reproducing published numbers within tolerance.
+- Incident/anomaly detection from speed drops vs. expected profile; false-alarm rate on simulated incidents.
+- **Uncertainty**: quantile GBM, conformal prediction, coverage checks.
+- Monitoring: input drift (counts, speeds) and error drift; alerts.
+- Network-level traffic science: MFD applications (perimeter control), how cities report congestion (TomTom/INRIX-style indices).
 **Concrete Tech Stack**
-- Experiment design: geo-cluster/switchback randomization implemented over your H3 grid from Module 1; power analysis via `statsmodels.stats.power`.
-- SRM detection: chi-square goodness-of-fit test on treatment/control allocation counts.
-- Calibration: `sklearn.calibration.calibration_curve`, `CalibratedClassifierCV` (`method='isotonic'` vs `'sigmoid'`), reliability diagrams.
-- Fallback classifier: a small LightGBM/logistic-regression binary classifier on meta-features producing P(trust own top result); evaluate via **precision-recall curve** and **ROC-AUC**, and explicitly select an operating threshold tied to a stated cost ratio.
-- Sequential testing: `mSPRT` reference implementations or a from-scratch implementation to demonstrate you understand the mechanics, not just the library call.
-
+- `statsforecast`/`sktime` for baselines, `lightgbm`, `torch` + **PyTorch Geometric Temporal** / LibCity / DCRNN-PyTorch, `timescaledb` (hypertables, continuous aggregates) + PostGIS, `evidently`, `mlflow`, `fastapi`.
 **Hands-on Production Project**
-"Switchback Experiment Simulator + Fallback Confidence Model" — (1) Simulate a switchback/geo-cluster A/B test over your H3 grid comparing Module 6's baseline ranker vs. an improved variant, including a deliberately injected spatial-interference effect, and show how naive user-level randomization would have mis-measured the effect versus correctly-designed switchback randomization. (2) Train the fallback-confidence classifier described above on your Module 7 error-taxonomy output (label = "was own top-1 actually correct") and produce the precision-recall operating-point analysis with a stated cost-ratio justification for your chosen threshold.
-
-**Open Datasets:** No single "ride-hailing experiment" public dataset exists at this granularity — this module is necessarily simulation-heavy; ground the simulation parameters (effect sizes, spatial-spillover magnitude) in published ride-hailing experimentation literature (Lyft/Uber/DiDi engineering blogs on switchback testing are the standard references — read them, cite the design pattern, build your own simulator rather than searching for a dataset that doesn't exist).
-
+"City Traffic-State Service" — `segment_state` table (camera counts/speeds + trajectories aggregated to road segments and H3 cells per 5 min, in TimescaleDB); forecasting benchmark seasonal naive → LightGBM → DCRNN/Graph WaveNet on METR-LA, then the same pipeline on your own segments with per-segment-class errors; incident detector evaluated on SUMO-injected incidents; prediction intervals with coverage; Evidently drift reports. Deliverable: API + map with current segment speeds, 30-minute forecast and active incidents, refreshed from the database; `make m08-benchmark` rebuilds every table; `m08/README.md`; capstone design-doc skeleton.
+ 
+**Open Datasets:** METR-LA, PEMS-BAY, Caltrans PeMS, your `segment_state` table, SUMO.
+ 
 ---
-
-## Module 9 — Capstone: Integrated Geo Search System (Weeks 25–30, flex to week 36+ for the 12-month track)
-
-**Goal:** stitch Modules 1–8 into one coherent, demo-able, architecturally-documented system — this is what actually goes on your resume/portfolio site and what you walk an interviewer through live.
-
-**Architecture to build and diagram (system-design style, know every arrow):**
+ 
+## Module 9 — Capstone: Camera-to-Map Traffic System + Urban Layers (Weeks 24–29)
+ 
+**Goal:** stitch Modules 2–8 into one coherent, demo-able, documented system — the thing that goes on your portfolio and that you walk an interviewer through live. Scope: 3 cameras, one study area, one city for the satellite layers. A working thin slice beats an ambitious broken system.
+ 
+**Architecture to build and diagram (know every arrow and its budget):**
 ```
-[Client keystroke]
-   → Query Understanding svc (Module 3/4: normalize, transliterate, intent-classify — <50ms)
-   → Candidate Generation (Module 1/2: H3 geo-filter + OpenSearch BM25/geo_distance + FAISS ANN)
-   → Feature Join (Module 5/6: feature-store lookup — spatial, behavioral, textual, real-time supply)
-   → LTR Re-rank (Module 6: LightGBM/CatBoost, p95 budget measured)
-   → Confidence/Fallback Gate (Module 8: serve own top-k vs. call external provider)
-   → Response
-        ⇣ (async)
-   Logging → Session reconstruction → Label pipeline (Module 5) → Replay harness (Module 7)
-        → Offline eval → Switchback online experiment (Module 8) → Model registry → redeploy
+[RTSP stream / replayed clip]
+   → Streaming ingest (ffmpeg → frame queue, back-pressure)
+   → Video worker (TensorRT FP16 detector + ByteTrack + zones + homography)   (Modules 5/6)
+   → per-camera, per-minute records → TimescaleDB
+   → segment_state continuous aggregates → forecast job every 5 min → incident detector   (Modules 7/8)
+   → FastAPI → MapLibre map (live speeds, forecast slider, incidents, camera frames)
+        ⇣ batch, monthly
+   STAC → composites → indices → segmentation → change → GeoParquet urban layers   (Modules 3/4)
+        ⇣ async
+   Logs → evaluation → MLflow champion/challenger → CI gates → redeploy; drift + camera-health monitoring
 ```
-- Write this up as a formal design doc (problem statement, requirements incl. latency/SLA budgets per stage, alternatives considered and rejected, metrics for success) — this document *is* the interview artifact; many senior interviews are structured around walking through exactly this kind of doc.
-- Add basic MLOps: model registry (`MLflow`), a `Makefile`/CI pipeline that retrains and validates against a minimum-NDCG gate before "deployment," and a monitoring stub for **feature drift** (`evidently` or hand-rolled PSI/KL-divergence checks on key spatial/behavioral features) — ties directly to "keep models healthy post-launch as data and cities shift."
-- Deploy at least the query-understanding + candidate-gen + rank path as a live, load-tested API (containerized, `docker`, optionally a minimal `k8s` manifest) with a public demo (even a small map UI via `folium`/a lightweight React+Mapbox frontend) — a working demo link is disproportionately persuasive versus a notebook.
-
-**Open Datasets for the capstone:** combine everything above — Overture Maps (index), NYC TLC + your synthetic session generator (behavior/labels), MSLR/ESCI (LTR sanity baseline), GeoNames + CAMeL Tools corpora (cross-script). Pick 2–3 real cities with genuinely poor OSM/Overture coverage (rural India, parts of Sub-Saharan Africa, or informal-settlement areas are well-documented as low-map-quality regions) to make your "developing markets" story concrete and specific rather than generic — the JD explicitly names this.
-
+- **Design doc** (problem, requirements incl. latency/throughput budgets per stage, data, models, evaluation, monitoring, risks, alternatives considered and rejected) — v1, external review by 1–2 CV/GIS/transport people, v2.
+- **MLOps**: MLflow registry for detector, forecaster and segmenter; CI evaluation gates before promotion; Evidently drift; camera-drift, dark/frozen-camera and data-freshness alerts; Locust load tests and chaos tests (kill a worker, stall the DB, move a camera).
+- **Public demo** on a Hugging Face Docker Space or small VM, running recorded clips replayed as streams with a CPU fallback detector — say so in the README. Optional: DeepStream comparison, Kubernetes manifest on `kind`.
+- **Reproducibility**: fresh clone + `make reproduce` regenerates every headline number; `docs/numbers.md` is the single source of truth.
+- Portfolio: top-level README (2-minute summary, demo link, diagram, 6 headline numbers), three "considered and rejected" trade-off case studies with numbers, a new-city onboarding playbook, résumé bullets, 15-minute recorded walkthrough, tag `v1.0`.
+**Open Datasets for the capstone:** everything above — your cameras + UA-DETRAC (video), BrnoCompSpeed (validation), Sentinel-2 + SpaceNet models (satellite layers), METR-LA (forecasting sanity baseline), SUMO (incident ground truth).
+ 
 ---
-
-## Module 10 — Interview & System-Design Readiness (Weeks 30–34, ongoing)
-
+ 
+## Module 10 — Interview & System-Design Readiness (Weeks 30–34)
+ 
 **Theoretical Foundation / Practice**
-- Rehearse explaining, from memory and on a whiteboard: (1) the IPS position-bias correction derivation, (2) the LambdaMART gradient intuition, (3) NDCG vs. MRR vs. Hit@k — when each is the *wrong* metric to optimize, (4) switchback experimentation for spatial interference, (5) the distillation loss and why <50ms rules out a live transformer call.
-- Practice **live system design** for prompts like: "Design geo search for a country where 40% of addresses aren't in any map provider," "Design the confidence model deciding own-answer vs. fallback," "Design an evaluation harness that wouldn't have missed a regression only visible in low-connectivity markets." Time-box yourself to 35–40 minutes each, out loud.
-- Mock case-study walkthroughs of your Module 9 capstone doc with a peer or on video — optimize for "what trade-off did you consider and reject, and why," since that's what distinguishes senior from mid-level answers.
-
+- Five derivations, from memory, recorded: (1) spatial cross-validation and leakage, (2) camera geometry → homography → ground-plane tracks → speed with error sources, (3) HOTA vs. MOTA vs. IDF1 and the ByteTrack association, (4) q = k·v, the fundamental diagram, shockwaves and the MFD, (5) spatio-temporal forecasting from baselines to DCRNN with per-horizon evaluation.
+- Timed 40-minute **system-design mocks**: "design a city-wide traffic monitoring system from cameras", "produce building footprints and growth maps for a country with little training data", "an evaluation and monitoring plan for a detector/segmenter rolled out to new cities". One structure every time: clarify → requirements & budgets → data → baseline → model → evaluation (spatially honest) → deployment → monitoring. Always name the alternative you rejected, with a number.
+- Coding refreshes under time: spatial join, H3 aggregation, haversine, zonal stats, homography with OpenCV, trajectory speed; IoU/NMS, a PyTorch training loop, a Kalman update, a rolling backtest, blocked CV.
+- Statistics and ML-breadth refresh, GeoAI vocabulary, company deep dives (mapping, mobility, smart-city, EO analytics).
 **Hands-on Production Project**
-Record yourself presenting the Module 9 architecture doc end-to-end in under 15 minutes, then do 3+ mock system-design interviews (peers, Pramp-style platforms, or self-recorded) on the prompts above, and revise the capstone write-up based on the gaps that surface.
-
+Capstone walkthrough under 15 minutes; four solo + two peer mocks with written feedback; a story bank of six STAR stories with numbers; a flashcard pass over every module's self-check questions; portfolio final pass (README, demo, design doc, LinkedIn consistent, every link works); applications to 5 roles and outreach to 3 people with the demo; a final honest pass through the readiness checklist.
+ 
 ---
-
+ 
 ## Consolidated Open Dataset Reference
-
+ 
 | Dataset | Use For |
 |---|---|
-| NYC TLC Trip Record Data | Sessions, demand surfaces, ETA/routing baselines |
-| Overture Maps (`places`, `divisions`, `transportation`) | POI index, multilingual names, road network |
-| OpenStreetMap extracts (Geofabrik) | Road graphs (OSMnx), low-map-quality region case studies |
-| GeoNames (incl. alternate names table) | Cross-script/transliteration testing, gazetteer |
-| OpenAddresses | Address parsing training data (libpostal-style) |
-| Porto Taxi Trajectories (ECML/PKDD 2015) | GPS trajectory / trip-pattern analysis |
-| MSLR-WEB10K / WEB30K | Canonical LTR benchmark, sanity-check LambdaMART/XGBoost/CatBoost pipeline |
-| Amazon ESCI (Shopping Queries Dataset) | Real relevance-judgment structure, transferable to geo |
-| Yandex Personalized Web Search Click Log | Real click-log with position info, for click-model/IPS practice |
-| Yelp Open Dataset | POI quality/attribute features |
-| CAMeL Tools corpora / QALB | Arabic NLP, dediacritization, typo/correction patterns |
-| Criteo / Open Bandit Pipeline (OBP) | Off-policy evaluation (IPS/SNIPS/doubly-robust) benchmarking |
-| CLINC150 / Banking77 | Generic intent-classification distillation practice before geo-specific application |
-
+| NYC Open Data 2015 Yellow Taxi (`2yzn-sicd`) | Demand surfaces, nearest-driver benchmarks (has coordinates; post-2016 TLC files don't) |
+| Overture Maps (`places`, `buildings`, `divisions`, `transportation`) | POI index, building masks, road network |
+| OpenStreetMap extracts (Geofabrik) | Road graphs (OSMnx), map matching, SUMO networks |
+| Sentinel-2 L2A (Planetary Computer STAC / Copernicus Data Space) | Composites, indices, change detection, training chips |
+| Sentinel-1 GRD, VIIRS nighttime lights, Copernicus DEM | Sensors beyond optical |
+| SpaceNet 1/2/3 | Building and road segmentation |
+| LoveDA | Cross-city generalisation test |
+| LEVIR-CD, xBD / xView2 | Change-detection training |
+| Microsoft Building Footprints | Footprint comparison baseline |
+| UA-DETRAC | Vehicle detection and tracking with labels (HOTA evaluation) |
+| AI City Challenge | Multi-camera tracking, counting, speed (request access early) |
+| VisDrone | Drone-view detection, tiny objects |
+| BrnoCompSpeed | Speed-estimation ground truth (LiDAR/GPS) |
+| pNEUMA (EPFL), highD | Drone-derived trajectories, fundamental diagrams, MFD |
+| NGSIM US-101 / I-80 | Vehicle trajectories, fundamental diagrams |
+| GeoLife | Map-matching practice |
+| METR-LA, PEMS-BAY, Caltrans PeMS | Traffic forecasting benchmarks |
+| SUMO (simulated) | Ground truth for estimators and incident detection |
+ 
 ---
-
-## Candidate Readiness Checklist — Senior DS, Geo Search
-
+ 
+## Candidate Readiness Checklist — Geospatial Data Scientist (GeoAI / CV)
+ 
 **Spatial fundamentals**
-- [ ] Can explain H3 vs. S2 vs. Geohash trade-offs and justify a resolution choice for a specific use case (surge heatmap vs. street-level nearest-driver)
-- [ ] Can write `ST_DWithin`/`ST_Intersects` PostGIS queries and equivalent OpenSearch `geo_distance`/`function_score` queries from memory
-- [ ] Understands why road-network ETA ≠ Haversine distance, and when each is acceptable
-
-**Query understanding**
-- [ ] Built and can demo a cross-script (e.g., Arabic/Arabizi/Latin) fuzzy place-matching pipeline
-- [ ] Can explain the LLM-teacher → distilled-student pattern and defend a specific student architecture choice against a <50ms budget with measured p99 numbers
-- [ ] Has hands-on experience with `libpostal`/CAMeL Tools or equivalent, not just theoretical knowledge
-
-**Labeling & bias**
-- [ ] Can derive the position-bias examination-probability model and explain IPS correction on a whiteboard
-- [ ] Has built (even synthetically) a pipeline that measurably improves NDCG by correcting biased labels vs. naive labels — with numbers to show
-- [ ] Understands cascade vs. PBM vs. DBN click models and their assumption failures for map/grid UIs
-
-**Ranking**
-- [ ] Has trained LTR models in LightGBM (`lambdarank`), XGBoost (`rank:pairwise`), and CatBoost (`YetiRank`) and can compare their objectives precisely
-- [ ] Can explain the LambdaMART `|ΔNDCG|`-scaled gradient intuition
-- [ ] Has built a real two-stage candidate-generation → re-ranking pipeline with measured latency at each stage
-- [ ] Can use SHAP to explain individual ranking decisions
-
-**Evaluation & experimentation**
-- [ ] Has built a replay/off-policy evaluation harness and can explain why naive replay is biased
-- [ ] Can design a switchback/geo-cluster experiment and explain why standard user-randomized A/B tests fail under spatial interference
-- [ ] Has built a calibrated confidence/fallback model with an explicit, cost-justified decision threshold
-- [ ] Defaults to segmented (per-market, per-language) evaluation, not aggregate metrics alone
-
+- [ ] Can explain H3 vs. S2 vs. Geohash trade-offs and justify a resolution choice for a specific use case
+- [ ] Can write `ST_DWithin`/`ST_Intersects`/KNN PostGIS queries from memory and knows when to reach for DuckDB instead
+- [ ] Understands why road-network distance ≠ Haversine, and when each is acceptable
+**Spatial statistics & evaluation**
+- [ ] Can explain spatial dependence vs. heterogeneity and read a LISA map and a GWR coefficient map
+- [ ] Can derive on a whiteboard why random K-fold leaks on spatial data and design blocked/buffered/leave-region-out folds
+- [ ] Has a measured random-vs-blocked CV gap on real data, with numbers
+- [ ] Defaults to per-city, per-density-stratum, per-horizon evaluation, never one aggregate number
+**Remote sensing & imagery DL**
+- [ ] Has built a STAC → cloud-masked composite → indices → zonal-stats pipeline and can explain SCL masking and COGs
+- [ ] Has trained, evaluated (on a city never seen in training) and vectorised a building/road segmentation model
+- [ ] Can compare a U-Net, MOSAIKS and a fine-tuned EO foundation model on identical splits and say which to ship and why
+- [ ] Has run change detection on real bi-temporal imagery and validated it against an independent signal
+**Video CV & geometry**
+- [ ] Has fine-tuned a detector on target-camera frames and can quote per-class AP, night/rain degradation and FPS on a given GPU
+- [ ] Evaluates trackers with HOTA on labelled clips and can explain why ID switches break counts
+- [ ] Can derive pinhole → homography → ground plane → speed, name the error sources and quote a validated speed error on BrnoCompSpeed
+- [ ] Has an automated camera-drift check
+**Trajectories, flow & forecasting**
+- [ ] Can explain HMM map matching and has matched real trajectories to an OSM graph
+- [ ] Can derive q = k·v, draw the fundamental diagram and explain the MFD; has computed them from real trajectories
+- [ ] Has a forecasting benchmark where seasonal naive, LightGBM and an ST-GNN are compared per horizon, with prediction intervals and coverage
+- [ ] Has a written movement-data privacy policy
 **System & production judgment**
-- [ ] Can whiteboard the full geo-search architecture end-to-end, including monitoring/retraining loop
-- [ ] Has a deployed, load-tested demo (not just notebooks) with real latency numbers
-- [ ] Can speak concretely, with named regions/examples, to "search in markets with poor map data" — not generic GIS talking points
-- [ ] Has 2–3 stories ready of a trade-off explicitly considered and rejected, with reasoning
-
+- [ ] Can whiteboard the full camera-to-map architecture end-to-end, including the batch satellite path and the monitoring/retraining loop, with budgets per stage
+- [ ] Has a deployed, load-tested demo (not just notebooks) with real throughput numbers
+- [ ] Every headline number reproduces from a clean checkout
+- [ ] Has 3 stories of a trade-off explicitly considered and rejected, with numbers
 ---
-
+ 
 ### How to use this document
-Work top to bottom, but treat Modules 5–8 as non-negotiable depth — they are what separates this JD from a generic "GIS + ML" posting. If you're compressing to 6 months, compress Modules 0–2 (assume more prior GIS knowledge) and Module 10 (run it in parallel with Module 9), but do not compress Modules 5, 6, 7, or 8.
+Work top to bottom. Modules 0–1 can compress if you already know GIS. Modules 4–8 are the depth that separates a GeoAI data scientist from a generalist — do not compress them. If you are on the 12-month track, flex weeks go after Module 9 (multi-camera tracking, SegFormer, a second city), not before it. Keep `docs/numbers.md` current as you go; Module 10 is built on it.
