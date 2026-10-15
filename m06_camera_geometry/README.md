@@ -1,7 +1,7 @@
-# Module 8: Experimentation & Fallback
+# Module 6: From Pixels to the Map: Camera Geometry & Speed ⭐ Flagship 2, part 2
 
 **Status:** ⬜ Not started
-**Deliverable:** Switchback simulator + confidence model
+**Deliverable:** Per-camera calibration, georeferenced tracks (WGS84) and speeds validated on BrnoCompSpeed
 **Plan:** [docs/roadmap.md](../docs/roadmap.md)
 
 ## Goal

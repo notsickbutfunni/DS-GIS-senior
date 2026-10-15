@@ -13,7 +13,7 @@ Module summaries first, full detail below. The day-by-day schedule, with every r
 **0. Environment & Mental Model (wk 1):** CRS (4326 vs 3857 vs projected); Haversine vs road distance; vector vs raster vs video as three ways of seeing the same city. Docker Compose (PostGIS/Timescale, Redis, MinIO).
 → Load Overture places for your city into PostGIS and DuckDB; assert parity on a 2 km radius query.
  
-**1. Spatial Indexing & Core Stack (wk 2–3):** Geohash vs S2 vs H3; R-trees vs grids; BallTree vs ANN. `h3`, PostGIS `ST_DWithin`/KNN, `sjoin_nearest`, OSMnx.
+**1. Spatial Indexing & Core Stack (wk 2–4):** Geohash vs S2 vs H3; R-trees vs grids; BallTree vs ANN. `h3`, PostGIS `ST_DWithin`/KNN, `sjoin_nearest`, OSMnx.
 → NYC 2015 taxi demand on H3 res-8; benchmark BallTree vs H3 ring search vs OSMnx ETA for nearest driver.
  
 **2. Spatial Statistics & Spatial ML (wk 4–6):** Moran's I / LISA, point patterns (KDE, Ripley's K), spatial lag/error regression (`spreg`), GWR (`mgwr`), kriging, regionalisation, **spatial cross-validation**.
@@ -70,7 +70,7 @@ This roadmap is built around one assumption: a GeoAI / transport-analytics inter
  
 **Time budget assumption:** 10–12.5 hrs/week. Modules 0–1 are foundational and can compress if you already know GIS. Modules 4–8 are where the job lives — do not rush them.
  
-**Repo layout:** `m00/ … m10/` one folder per module (each with its own README = the module write-up), `src/geosearch/` for reusable code, `docs/roadmap.md` (this file), `docs/numbers.md` (every headline number and where it comes from), `docs/stories.md` (interview stories). `data/` and `.env` are git-ignored; never commit API keys, datasets or raw video, and check each camera feed's terms of use before recording it.
+**Repo layout:** `m00_environment/ … m10_interviews/` one folder per module (each with its own README = the module write-up), `src/geosearch/` for reusable code, `docs/roadmap.md` (this file), `numbers.md` (every headline number and where it comes from), `stories.md` (interview stories). `data/` and `.env` are git-ignored; never commit API keys, datasets or raw video, and check each camera feed's terms of use before recording it.
  
 ---
  
@@ -87,7 +87,7 @@ This roadmap is built around one assumption: a GeoAI / transport-analytics inter
 - Stand up the local stack via `docker-compose.yml`. Load an Overture Maps `places` extract for one city into PostGIS **and** DuckDB. Write a script that queries both for "restaurants within 2 km of point X" and asserts result parity. This becomes your dev sandbox for every later module.
 ---
  
-## Module 1 — Spatial Indexing & the Geospatial Core Stack (Weeks 2–3)
+## Module 1 — Spatial Indexing & the Geospatial Core Stack (Weeks 2–4)
  
 **Theoretical Foundation**
 - Why lat/lon pairs are a bad index key: no locality, expensive range queries, no cheap "nearby" on a B-tree.
@@ -119,7 +119,7 @@ This roadmap is built around one assumption: a GeoAI / transport-analytics inter
 **Concrete Tech Stack**
 - `esda` (Moran, Moran_Local, G_Local), `libpysal.weights`, `pointpats`, `spreg` (`OLS`, `ML_Lag`, `ML_Error`, LM tests), `mgwr` (`Sel_BW`, `GWR`, `MGWR`), `PyKrige` / `scikit-gstat`, `spopt` (regionalisation: SKATER, max-p), `spacv` / `scikit-learn` custom splitters for blocked CV, `LightGBM` for the tabular model.
 **Hands-on Production Project**
-"Spatial Modelling Report for One City" — On Module 1's `city_cells`: point patterns and hot spots of demand; OLS → lag → error → GWR on demand vs. urban-form features with local-coefficient maps; kriging of a sampled variable vs. IDW on held-out points; then a **spatial-CV benchmark**: LightGBM with random vs. blocked vs. leave-district-out folds, with and without spatial lag features. Deliverable: `m02/README.md` with one figure per section; the random-vs-blocked CV gap is the headline figure. Record a 6-minute explanation of spatial CV and GWR.
+"Spatial Modelling Report for One City" — On Module 1's `city_cells`: point patterns and hot spots of demand; OLS → lag → error → GWR on demand vs. urban-form features with local-coefficient maps; kriging of a sampled variable vs. IDW on held-out points; then a **spatial-CV benchmark**: LightGBM with random vs. blocked vs. leave-district-out folds, with and without spatial lag features. Deliverable: `m02_spatial_stats/README.md` with one figure per section; the random-vs-blocked CV gap is the headline figure. Record a 6-minute explanation of spatial CV and GWR.
  
 **Open Datasets:** Your own `city_cells` table (Module 1), Overture Places/Buildings, any open-data sensor or census layer for your city.
  
@@ -176,7 +176,7 @@ This roadmap is built around one assumption: a GeoAI / transport-analytics inter
 **Concrete Tech Stack**
 - `ultralytics` (YOLO11 train/val/predict/track/export/benchmark), `supervision` (`LineZone`, `PolygonZone`, annotators), `boxmot` or Ultralytics built-in ByteTrack/BoT-SORT, **TrackEval** for HOTA, **CVAT** for labelling, `opencv-python`, `ffmpeg`, TensorRT via Ultralytics export, Parquet/Postgres sink.
 **Hands-on Production Project**
-"Traffic Counting Service v1" — Collect clips from 2–3 public traffic cameras (check terms of use) plus UA-DETRAC; label 150 frames in CVAT; fine-tune YOLO11s and review night/rain failures; run ByteTrack and BoT-SORT on a labelled UA-DETRAC sequence and score with TrackEval, tuning thresholds on HOTA; per-lane, per-direction counts against manual counts; robustness table (night/rain, 5/10/25 FPS); TensorRT FP16/INT8 benchmarks; drone footage (VisDrone) with tiling for tiny objects; one active-learning round. Deliverable: a service that takes a stream/clip + camera config and emits per-minute counts by class, lane and direction to Parquet/Postgres; a 60-second annotated demo video; `m05/README.md`.
+"Traffic Counting Service v1" — Collect clips from 2–3 public traffic cameras (check terms of use) plus UA-DETRAC; label 150 frames in CVAT; fine-tune YOLO11s and review night/rain failures; run ByteTrack and BoT-SORT on a labelled UA-DETRAC sequence and score with TrackEval, tuning thresholds on HOTA; per-lane, per-direction counts against manual counts; robustness table (night/rain, 5/10/25 FPS); TensorRT FP16/INT8 benchmarks; drone footage (VisDrone) with tiling for tiny objects; one active-learning round. Deliverable: a service that takes a stream/clip + camera config and emits per-minute counts by class, lane and direction to Parquet/Postgres; a 60-second annotated demo video; `m05_video_cv/README.md`.
  
 **Open Datasets:** UA-DETRAC, AI City Challenge (request access in week 13 — approval takes weeks), VisDrone, your own camera clips.
  
@@ -195,7 +195,7 @@ This roadmap is built around one assumption: a GeoAI / transport-analytics inter
 **Concrete Tech Stack**
 - `opencv-python` (`findHomography`, `perspectiveTransform`, calibration), `pyproj` (UTM ↔ WGS84), `numpy`/`scipy` smoothing (Savitzky–Golay / Kalman), `geopandas` → GeoParquet trajectories, a per-camera YAML calibration file, `lonboard`/MapLibre to publish the layer.
 **Hands-on Production Project**
-"Georeferenced Traffic Layer v1" — Per-camera calibration files with reprojection errors; Module 5 tracks projected to WGS84 and written as GeoParquet trajectories; speed estimation implemented and validated on **BrnoCompSpeed** (tuned window and smoothing, error table against truth); the same applied to your own cameras with sanity checks against speed limits and free-flow conditions; an automated homography-drift check. Deliverable: per-camera, per-minute records (counts + speeds + positions) with coordinates, published as a map layer; `m06/README.md` with calibration method, errors, validation, limits.
+"Georeferenced Traffic Layer v1" — Per-camera calibration files with reprojection errors; Module 5 tracks projected to WGS84 and written as GeoParquet trajectories; speed estimation implemented and validated on **BrnoCompSpeed** (tuned window and smoothing, error table against truth); the same applied to your own cameras with sanity checks against speed limits and free-flow conditions; an automated homography-drift check. Deliverable: per-camera, per-minute records (counts + speeds + positions) with coordinates, published as a map layer; `m06_camera_geometry/README.md` with calibration method, errors, validation, limits.
  
 **Open Datasets:** BrnoCompSpeed, pNEUMA (EPFL), highD, your own cameras.
  
@@ -215,7 +215,7 @@ This roadmap is built around one assumption: a GeoAI / transport-analytics inter
 **Concrete Tech Stack**
 - `movingpandas`, `scikit-mobility`, **FMM** (Fast Map Matching) on an OSMnx graph, `osmnx`, `sumo` + `traci`, `geopandas`, `h3`, `streamlit` + `lonboard` for the dashboard.
 **Hands-on Production Project**
-"Trajectory Toolkit + Study-Area Dashboard" — Map-match pNEUMA and GeoLife trajectories with FMM; compute fundamental diagrams from NGSIM US-101 and pNEUMA and compare with camera-derived counts; turning-movement counts at one intersection; OD matrices at H3 zones; reproduce the MFD idea on pNEUMA; SUMO network + simulated day to validate every estimator; anomaly detection with precision on hand-checked cases. Package it as `src/geosearch/traj` (loading, cleaning, map matching, Edie metrics, TMC, OD) with tests on SUMO data. Deliverable: a Streamlit/lonboard dashboard of segment speeds, turning movements, OD flows and queue lengths for one day; `m07/README.md` including the privacy policy.
+"Trajectory Toolkit + Study-Area Dashboard" — Map-match pNEUMA and GeoLife trajectories with FMM; compute fundamental diagrams from NGSIM US-101 and pNEUMA and compare with camera-derived counts; turning-movement counts at one intersection; OD matrices at H3 zones; reproduce the MFD idea on pNEUMA; SUMO network + simulated day to validate every estimator; anomaly detection with precision on hand-checked cases. Package it as `src/geosearch/traj` (loading, cleaning, map matching, Edie metrics, TMC, OD) with tests on SUMO data. Deliverable: a Streamlit/lonboard dashboard of segment speeds, turning movements, OD flows and queue lengths for one day; `m07_trajectories/README.md` including the privacy policy.
  
 **Open Datasets:** pNEUMA, NGSIM (US-101, I-80), GeoLife, highD, SUMO outputs, your Module 6 tracks.
  
@@ -235,7 +235,7 @@ This roadmap is built around one assumption: a GeoAI / transport-analytics inter
 **Concrete Tech Stack**
 - `statsforecast`/`sktime` for baselines, `lightgbm`, `torch` + **PyTorch Geometric Temporal** / LibCity / DCRNN-PyTorch, `timescaledb` (hypertables, continuous aggregates) + PostGIS, `evidently`, `mlflow`, `fastapi`.
 **Hands-on Production Project**
-"City Traffic-State Service" — `segment_state` table (camera counts/speeds + trajectories aggregated to road segments and H3 cells per 5 min, in TimescaleDB); forecasting benchmark seasonal naive → LightGBM → DCRNN/Graph WaveNet on METR-LA, then the same pipeline on your own segments with per-segment-class errors; incident detector evaluated on SUMO-injected incidents; prediction intervals with coverage; Evidently drift reports. Deliverable: API + map with current segment speeds, 30-minute forecast and active incidents, refreshed from the database; `make m08-benchmark` rebuilds every table; `m08/README.md`; capstone design-doc skeleton.
+"City Traffic-State Service" — `segment_state` table (camera counts/speeds + trajectories aggregated to road segments and H3 cells per 5 min, in TimescaleDB); forecasting benchmark seasonal naive → LightGBM → DCRNN/Graph WaveNet on METR-LA, then the same pipeline on your own segments with per-segment-class errors; incident detector evaluated on SUMO-injected incidents; prediction intervals with coverage; Evidently drift reports. Deliverable: API + map with current segment speeds, 30-minute forecast and active incidents, refreshed from the database; `make m08-benchmark` rebuilds every table; `m08_forecasting/README.md`; capstone design-doc skeleton.
  
 **Open Datasets:** METR-LA, PEMS-BAY, Caltrans PeMS, your `segment_state` table, SUMO.
  
@@ -261,7 +261,7 @@ This roadmap is built around one assumption: a GeoAI / transport-analytics inter
 - **Design doc** (problem, requirements incl. latency/throughput budgets per stage, data, models, evaluation, monitoring, risks, alternatives considered and rejected) — v1, external review by 1–2 CV/GIS/transport people, v2.
 - **MLOps**: MLflow registry for detector, forecaster and segmenter; CI evaluation gates before promotion; Evidently drift; camera-drift, dark/frozen-camera and data-freshness alerts; Locust load tests and chaos tests (kill a worker, stall the DB, move a camera).
 - **Public demo** on a Hugging Face Docker Space or small VM, running recorded clips replayed as streams with a CPU fallback detector — say so in the README. Optional: DeepStream comparison, Kubernetes manifest on `kind`.
-- **Reproducibility**: fresh clone + `make reproduce` regenerates every headline number; `docs/numbers.md` is the single source of truth.
+- **Reproducibility**: fresh clone + `make reproduce` regenerates every headline number; `numbers.md` is the single source of truth.
 - Portfolio: top-level README (2-minute summary, demo link, diagram, 6 headline numbers), three "considered and rejected" trade-off case studies with numbers, a new-city onboarding playbook, résumé bullets, 15-minute recorded walkthrough, tag `v1.0`.
 **Open Datasets for the capstone:** everything above — your cameras + UA-DETRAC (video), BrnoCompSpeed (validation), Sentinel-2 + SpaceNet models (satellite layers), METR-LA (forecasting sanity baseline), SUMO (incident ground truth).
  
@@ -338,4 +338,4 @@ Capstone walkthrough under 15 minutes; four solo + two peer mocks with written f
 ---
  
 ### How to use this document
-Work top to bottom. Modules 0–1 can compress if you already know GIS. Modules 4–8 are the depth that separates a GeoAI data scientist from a generalist — do not compress them. If you are on the 12-month track, flex weeks go after Module 9 (multi-camera tracking, SegFormer, a second city), not before it. Keep `docs/numbers.md` current as you go; Module 10 is built on it.
+Work top to bottom. Modules 0–1 can compress if you already know GIS. Modules 4–8 are the depth that separates a GeoAI data scientist from a generalist — do not compress them. If you are on the 12-month track, flex weeks go after Module 9 (multi-camera tracking, SegFormer, a second city), not before it. Keep `numbers.md` current as you go; Module 10 is built on it.

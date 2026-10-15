@@ -1,7 +1,7 @@
-# Module 1: Spatial Indexing
+# Module 1: Spatial Indexing & the Geospatial Core Stack
 
 **Status:** ⬜ Not started
-**Deliverable:** Nearest-driver strategy benchmark
+**Deliverable:** Demand heatmap + nearest-driver benchmark (3 strategies × 4 driver densities)
 **Plan:** [docs/roadmap.md](../docs/roadmap.md)
 
 ## Goal

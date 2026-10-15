@@ -1,7 +1,7 @@
-# Module 6: Learning to Rank
+# Module 3: Raster Data & Remote Sensing
 
 **Status:** ⬜ Not started
-**Deliverable:** Two-stage geo LTR service
+**Deliverable:** Sentinel-2 pipeline: STAC → cloud-masked composites → indices → zonal stats per H3 cell; training chips for Module 4
 **Plan:** [docs/roadmap.md](../docs/roadmap.md)
 
 ## Goal

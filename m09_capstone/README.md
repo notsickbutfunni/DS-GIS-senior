@@ -1,7 +1,7 @@
-# Module 9: Capstone
+# Module 9: Capstone: Camera-to-Map Traffic System + Urban Layers
 
 **Status:** ⬜ Not started
-**Deliverable:** Deployed demo + design doc
+**Deliverable:** Deployed demo, design doc v2, MLOps loop (registry + gates + drift), recorded walkthrough
 **Plan:** [docs/roadmap.md](../docs/roadmap.md)
 
 ## Goal

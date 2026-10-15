@@ -1,7 +1,7 @@
-# Module 7: Offline Replay & Error Analysis
+# Module 5: Video Computer Vision: Detect, Track, Count ⭐ Flagship 2, part 1
 
 **Status:** ⬜ Not started
-**Deliverable:** Replay harness + segmented report
+**Deliverable:** Counting service: per-minute counts by class, lane and direction from traffic-camera video
 **Plan:** [docs/roadmap.md](../docs/roadmap.md)
 
 ## Goal

@@ -1,7 +1,7 @@
-# Module 5: Unbiased Ranking Labels
+# Module 4: Deep Learning for Satellite & Aerial Imagery ⭐ Flagship 1
 
 **Status:** ⬜ Not started
-**Deliverable:** IPS-corrected label pipeline
+**Deliverable:** Urban-growth layer: building footprints + roads + change polygons on a time-slider map
 **Plan:** [docs/roadmap.md](../docs/roadmap.md)
 
 ## Goal

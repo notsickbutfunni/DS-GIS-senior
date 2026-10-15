@@ -19,13 +19,13 @@ Full plan: [docs/roadmap.md](docs/roadmap.md) · Results: [numbers.md](numbers.m
 |---|---|---|---|---|
 | 0 | [Environment & Mental Model](m00_environment/) | 1 | 🟡 In progress (3/5) | Docker stack + PostGIS/OpenSearch parity check |
 | 1 | [Spatial Indexing & Core Stack](m01_spatial_indexing/) | 2–4 | ⬜ Not started | Demand heatmap + nearest-driver benchmark |
-| 2 | [Spatial Statistics & Spatial ML](m02_opensearch/) | 4–6 | ⬜ Not started | Spatial-modelling report: random vs blocked CV |
-| 3 | [Raster Data & Remote Sensing](m03_query_understanding/) | 7–8 | ⬜ Not started | Sentinel-2 pipeline: composites → indices per H3 cell |
-| 4 | [Deep Learning for Satellite Imagery ⭐](m04_distillation/) | 9–12 | ⬜ Not started | Urban-growth layer: footprints + roads + change |
-| 5 | [Video CV: Detect, Track, Count ⭐](m05_labels/) | 13–15 | ⬜ Not started | Counting service by class, lane and direction |
-| 6 | [Pixels to Map: Camera Geometry & Speed ⭐](m06_ltr/) | 16–17 | ⬜ Not started | Georeferenced tracks + speeds validated on BrnoCompSpeed |
-| 7 | [Trajectories & Traffic Flow](m07_replay/) | 18–20 | ⬜ Not started | Trajectory toolkit + study-area dashboard |
-| 8 | [Spatio-Temporal Analytics & Forecasting](m08_experiments/) | 21–23 | ⬜ Not started | Traffic-state API with 30-min forecasts |
+| 2 | [Spatial Statistics & Spatial ML](m02_spatial_stats/) | 4–6 | ⬜ Not started | Spatial-modelling report: random vs blocked CV |
+| 3 | [Raster Data & Remote Sensing](m03_remote_sensing/) | 7–8 | ⬜ Not started | Sentinel-2 pipeline: composites → indices per H3 cell |
+| 4 | [Deep Learning for Satellite Imagery ⭐](m04_imagery_dl/) | 9–12 | ⬜ Not started | Urban-growth layer: footprints + roads + change |
+| 5 | [Video CV: Detect, Track, Count ⭐](m05_video_cv/) | 13–15 | ⬜ Not started | Counting service by class, lane and direction |
+| 6 | [Pixels to Map: Camera Geometry & Speed ⭐](m06_camera_geometry/) | 16–17 | ⬜ Not started | Georeferenced tracks + speeds validated on BrnoCompSpeed |
+| 7 | [Trajectories & Traffic Flow](m07_trajectories/) | 18–20 | ⬜ Not started | Trajectory toolkit + study-area dashboard |
+| 8 | [Spatio-Temporal Analytics & Forecasting](m08_forecasting/) | 21–23 | ⬜ Not started | Traffic-state API with 30-min forecasts |
 | 9 | [Capstone: Camera-to-Map Traffic System](m09_capstone/) | 24–29 | ⬜ Not started | Deployed demo + design doc |
 | 10 | [Interview Readiness](m10_interviews/) | 30–34 | ⬜ Not started | Recorded derivations, capstone walkthrough, mocks |
 

@@ -1,7 +1,7 @@
-# Module 10: Interview Readiness
+# Module 10: Interview & System-Design Readiness
 
 **Status:** ⬜ Not started
-**Deliverable:** Recorded walkthrough + mock interviews
+**Deliverable:** Five recorded derivations, <15-min capstone walkthrough, solo + peer mocks, story bank
 **Plan:** [docs/roadmap.md](../docs/roadmap.md)
 
 ## Goal

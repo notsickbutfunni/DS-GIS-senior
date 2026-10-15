@@ -1,7 +1,7 @@
-# Module 4: LLM Distillation
+# Module 7: Trajectories & Traffic Flow
 
 **Status:** ⬜ Not started
-**Deliverable:** Intent classifier at 10ms p99
+**Deliverable:** `src/geosearch/traj` toolkit + study-area dashboard (segment speeds, turning movements, OD, queues)
 **Plan:** [docs/roadmap.md](../docs/roadmap.md)
 
 ## Goal

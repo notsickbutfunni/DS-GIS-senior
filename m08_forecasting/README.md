@@ -1,7 +1,7 @@
-# Module 2: OpenSearch for Geo
+# Module 8: City-Scale Spatio-Temporal Analytics & Forecasting
 
 **Status:** ⬜ Not started
-**Deliverable:** Cross-script autocomplete engine
+**Deliverable:** Segment-state table, incident detector, forecasting benchmark + traffic-state API with 30-min forecasts
 **Plan:** [docs/roadmap.md](../docs/roadmap.md)
 
 ## Goal

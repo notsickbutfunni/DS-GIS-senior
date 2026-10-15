@@ -1,7 +1,7 @@
-# Module 3: Query Understanding
+# Module 2: Spatial Statistics & Spatial Machine Learning
 
 **Status:** ⬜ Not started
-**Deliverable:** Query understanding microservice
+**Deliverable:** Spatial-modelling report on one city: point patterns, hot spots, spatial regression vs GWR, kriging, random vs blocked CV
 **Plan:** [docs/roadmap.md](../docs/roadmap.md)
 
 ## Goal

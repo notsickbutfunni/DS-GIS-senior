@@ -1,7 +1,7 @@
 [project]
 name = "geosearch"
 version = "0.1.0"
-description = "Geo Search Senior DS roadmap: shared code and module projects"
+description = "Geospatial DS roadmap (GeoAI / computer vision): shared code and module projects"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
