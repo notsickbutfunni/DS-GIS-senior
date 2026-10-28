@@ -17,7 +17,8 @@ down:
 
 data:
 	mkdir -p data/raw
-	uv run overturemaps download --bbox=$(BBOX) -f geoparquet --type=place -o data/raw/places.parquet
+	# wrapper adds a User-Agent; the plain `overturemaps` CLI gets 403 from the STAC catalog
+	uv run python -m geosearch.overture_cli download --bbox=$(BBOX) -f geoparquet --type=place -o data/raw/places.parquet
 
 lab:
 	uv run jupyter lab
