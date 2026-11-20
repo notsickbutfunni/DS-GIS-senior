@@ -4,7 +4,7 @@ Module summaries first, full detail below. The day-by-day schedule, with every r
  
 **Direction:** GIS analytics and travel-demand modelling as the foundation; machine learning and deep learning applied to traffic (forecasting, calibration, causal evaluation, counts from video); one platform capstone; interview preparation aimed at big-tech loops.
  
-**Timeline:** 57 weeks, 28 Sep 2026 → 27 Oct 2027, three sessions a week (Tue/Wed/Thu; Theory/Lab 2 h, Build 4–5 h), ≈415 h in total. Modules 0–2 are unchanged from the earlier plan.
+**Timeline:** 57 weeks, 28 Sep 2026 → ~27 Oct 2027, min* three sessions a week (Tue/Wed/Thu; Theory/Lab 2 h, Build 4–5 h), ≈415 h in total. Modules 0–2 are unchanged from the earlier plan.
  
 **Hardware:** Colab/Kaggle for anything that needs >8 GB VRAM (foundation-model fine-tunes, DCRNN); a local RTX 4060 (8 GB) for everything else — 512 px tiles, batch 8, mixed precision.
 
