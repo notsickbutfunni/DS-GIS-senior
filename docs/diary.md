@@ -14,5 +14,12 @@ Today I wanted to admit that I haven't learned at least module0 fully till today
    - My github profile for sure, this repo, thats all I can show which I did myself
 4. - How I feel at the job: on a place where they hired me, or how with the environment and platform I use right now?
    - This role makes me thibk I'm stuck on a place. Things they told me to do are boring lately, I wish I could do stuff more. I will search for tasks myself and try to automate the boring stuff in a routine.
-   
+
+---
+
+# Summary: 23.11.2026 
+- did one job task: parsed 20 buses withing 05.11-20.11
+- introduced my work for 2nd year students, answered the questions and explained the bus-gps parser
+- did 5 python calculations in deep-ml learning path(matrices + vectors) 
+
 ---
